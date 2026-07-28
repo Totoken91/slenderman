@@ -11,69 +11,30 @@
   body { font-family: "Courier New", monospace; color: #cfcfcf; cursor: default; }
   canvas { display: block; }
 
-  /* Overlay de statique/glitch (bruit) rendu sur un canvas 2D par-dessus la 3D */
-  #staticOverlay {
-    position: fixed; inset: 0; pointer-events: none; z-index: 10;
-    opacity: 0;                 /* piloté par JS selon la proximité de l'Entité */
-    mix-blend-mode: screen;
-  }
-  /* Vignette sombre permanente pour l'ambiance oppressante */
-  #vignette {
-    position: fixed; inset: 0; pointer-events: none; z-index: 9;
-    box-shadow: inset 0 0 22vw 12vw rgba(0,0,0,0.92);
-  }
+  #staticOverlay { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; opacity: 0; mix-blend-mode: screen; }
+  #vignette { position: fixed; inset: 0; pointer-events: none; z-index: 9; box-shadow: inset 0 0 22vw 12vw rgba(0,0,0,0.92); }
 
-  /* ---------- HUD ---------- */
   #hud { position: fixed; inset: 0; pointer-events: none; z-index: 12; display: none; }
-  #pageCounter {
-    position: absolute; top: 22px; left: 26px; font-size: 22px; letter-spacing: 2px;
-    text-shadow: 0 0 8px #000, 0 0 14px #000;
-  }
+  #pageCounter { position: absolute; top: 22px; left: 26px; font-size: 22px; letter-spacing: 2px; text-shadow: 0 0 8px #000, 0 0 14px #000; }
   #pageCounter .lbl { opacity: 0.6; font-size: 14px; }
-
-  #staminaWrap {
-    position: absolute; bottom: 28px; left: 26px; width: 220px; height: 10px;
-    border: 1px solid rgba(255,255,255,0.25); background: rgba(0,0,0,0.4);
-  }
+  #staminaWrap { position: absolute; bottom: 28px; left: 26px; width: 220px; height: 10px; border: 1px solid rgba(255,255,255,0.25); background: rgba(0,0,0,0.4); }
   #staminaBar { height: 100%; width: 100%; background: linear-gradient(90deg,#3a6,#6d9); transition: width .08s linear; }
   #staminaWrap .cap { position:absolute; top:-18px; left:0; font-size:11px; opacity:0.55; letter-spacing:1px;}
-
-  #heart {
-    position: absolute; bottom: 24px; right: 28px; font-size: 40px; color: #b33;
-    text-shadow: 0 0 12px #500; transform-origin: center;
-  }
+  #heart { position: absolute; bottom: 24px; right: 28px; font-size: 40px; color: #b33; text-shadow: 0 0 12px #500; transform-origin: center; }
   #heart .bpm { font-size: 12px; color:#caa; display:block; text-align:center; letter-spacing:1px;}
+  #reticle { position: absolute; top: 50%; left: 50%; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%; background: rgba(255,255,255,0.55); box-shadow: 0 0 6px rgba(0,0,0,0.8); }
+  #pickPrompt { position: absolute; top: 56%; left: 50%; transform: translateX(-50%); font-size: 15px; letter-spacing: 2px; opacity: 0; transition: opacity .12s; text-shadow: 0 0 8px #000; }
+  #whisper { position: absolute; top: 44%; left: 50%; transform: translateX(-50%); font-size: 18px; letter-spacing: 4px; color:#a33; opacity:0; text-shadow: 0 0 14px #400; pointer-events:none; }
 
-  #reticle {
-    position: absolute; top: 50%; left: 50%; width: 6px; height: 6px; margin: -3px 0 0 -3px;
-    border-radius: 50%; background: rgba(255,255,255,0.55); box-shadow: 0 0 6px rgba(0,0,0,0.8);
-  }
-  #pickPrompt {
-    position: absolute; top: 56%; left: 50%; transform: translateX(-50%);
-    font-size: 15px; letter-spacing: 2px; opacity: 0; transition: opacity .12s; text-shadow: 0 0 8px #000;
-  }
-  #whisper {
-    position: absolute; top: 44%; left: 50%; transform: translateX(-50%);
-    font-size: 18px; letter-spacing: 4px; color:#a33; opacity:0; text-shadow: 0 0 14px #400; pointer-events:none;
-  }
-
-  /* ---------- Écrans ---------- */
-  .screen {
-    position: fixed; inset: 0; z-index: 20; display: flex; flex-direction: column;
-    align-items: center; justify-content: center; text-align: center;
-    background: radial-gradient(circle at 50% 40%, #0a0a0c 0%, #000 80%); gap: 26px; padding: 20px;
-  }
+  .screen { position: fixed; inset: 0; z-index: 20; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; background: radial-gradient(circle at 50% 40%, #0a0a0c 0%, #000 80%); gap: 26px; padding: 20px; }
   .screen h1 { font-size: clamp(34px,7vw,74px); letter-spacing: 8px; color:#d8d8d8; text-shadow: 0 0 20px #000, 0 0 40px rgba(120,0,0,0.4); }
   .screen h1.dead { color:#b12; text-shadow: 0 0 26px #500; }
   .screen h1.win  { color:#9c9; text-shadow: 0 0 26px #030; }
   .screen p { max-width: 640px; line-height: 1.7; opacity: 0.8; font-size: 15px; }
   .screen .hint { opacity: 0.5; font-size: 13px; }
-  .btn {
-    pointer-events: auto; cursor: pointer; background: transparent; color: #ddd;
-    border: 1px solid rgba(255,255,255,0.4); padding: 16px 42px; font-family: inherit;
-    font-size: 20px; letter-spacing: 4px; transition: all .18s;
-  }
-  .btn:hover { background: rgba(200,30,30,0.15); border-color:#b33; color:#fff; letter-spacing: 6px; }
+  .btn { pointer-events: auto; cursor: pointer; background: transparent; color: #ddd; border: 1px solid rgba(255,255,255,0.4); padding: 16px 42px; font-family: inherit; font-size: 20px; letter-spacing: 4px; transition: all .18s; }
+  .btn:hover:not(:disabled) { background: rgba(200,30,30,0.15); border-color:#b33; color:#fff; letter-spacing: 6px; }
+  .btn:disabled { opacity:0.4; cursor: wait; }
   #titleScreen h1 { animation: flicker 4s infinite; }
   @keyframes flicker { 0%,19%,21%,55%,57%,100%{opacity:1;} 20%,56%{opacity:0.4;} }
   .keys { display:flex; gap:14px; flex-wrap:wrap; justify-content:center; opacity:0.7; font-size:13px;}
@@ -84,7 +45,6 @@
 <body>
 
 <div id="loading">CHARGEMENT…</div>
-
 <canvas id="staticOverlay"></canvas>
 <div id="vignette"></div>
 
@@ -99,15 +59,15 @@
 
 <div id="titleScreen" class="screen">
   <h1>THE&nbsp;&nbsp;PAGES</h1>
-  <p>Vous êtes seul dans la forêt, la nuit. Huit pages sont éparpillées entre les arbres.
+  <p>Vous êtes seul dans un cimetière forestier, la nuit. Huit pages sont éparpillées entre les arbres morts.
      Ramassez-les toutes. Mais chaque page réveille un peu plus <b>l'Entité</b>…
      Ne la laissez jamais vous fixer trop longtemps.</p>
   <div class="keys">
     <span>ZQSD / WASD — bouger</span><span>SOURIS — regarder</span>
     <span>SHIFT — sprint</span><span>F — lampe</span><span>E / CLIC — ramasser</span>
   </div>
-  <button class="btn" id="startBtn">COMMENCER</button>
-  <div class="hint">Son recommandé. Cliquez pour verrouiller la souris.</div>
+  <button class="btn" id="startBtn" disabled>CHARGEMENT…</button>
+  <div class="hint">Son recommandé. Ouvre via un serveur local (ex : <code>python -m http.server</code>) pour charger les modèles 3D.</div>
 </div>
 
 <div id="endScreen" class="screen" style="display:none;">
@@ -116,28 +76,33 @@
   <button class="btn" id="replayBtn">REJOUER</button>
 </div>
 
-<!-- Three.js r128 + GLTFLoader depuis cdnjs -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/GLTFLoader.js"></script>
+<!-- Three.js r128 + GLTFLoader hébergés localement : 100% hors-ligne, aucune dépendance CDN -->
+<script src="js/three.min.js"></script>
+<script src="js/GLTFLoader.js"></script>
 <script>
 /* =====================================================================================
-   THE PAGES — prototype FPS horror type Slender (v2 : graphismes + fix caméra)
+   THE PAGES — prototype FPS horror type Slender (v3 : vrais modèles 3D)
 
-   ▸ Tous les réglages sont dans CONFIG et MODELS ci-dessous.
-   ▸ MODELS : mets une URL .glb/.gltf (CORS autorisé) pour importer un vrai modèle 3D.
-     Si l'URL est vide OU si le chargement échoue → fallback automatique sur la
-     géométrie procédurale (le jeu ne casse jamais).
+   Modèles 3D importés (CC0) et hébergés dans ./models :
+     • Entité  : "Skeleton Mage" (KayKit Character Pack: Skeletons, Kay Lousberg) — rigged + animé
+     • Décor   : KayKit Halloween Bits — arbres morts, pins, tombes, cryptes, grilles,
+                 lanternes, citrouilles… (Kay Lousberg)
+   Tout est en CC0. Si un modèle ne se charge pas (ex : ouverture en file:// sans serveur),
+   le jeu bascule automatiquement sur de la géométrie procédurale : il ne casse jamais.
+
+   ▸ Tous les réglages de gameplay sont dans CONFIG ci-dessous.
    ===================================================================================== */
 
 const CONFIG = {
   // ---------- Monde ----------
   WORLD_SIZE: 120,
-  TREE_COUNT: 55,
-  TREE_MIN_DIST: 6,
-  ROCK_COUNT: 22,
-  LOG_COUNT: 10,
-  FIREFLY_COUNT: 60,
-  FOG_DENSITY: 0.045,       // ↑ = on voit moins loin
+  TREE_COUNT: 52,
+  GRAVE_COUNT: 16,
+  CRYPT_COUNT: 3,
+  FENCE_COUNT: 20,
+  LANTERN_COUNT: 12,   // lanternes/citrouilles lumineuses (pools de lumière dans le brouillard)
+  PROP_COUNT: 16,      // crânes, os, petites citrouilles décoratives
+  FOG_DENSITY: 0.045,  // ↑ = on voit moins loin
   FOG_COLOR: 0x06080c,
 
   // ---------- Joueur ----------
@@ -158,6 +123,7 @@ const CONFIG = {
   PAGE_RAY_DOT: 0.94,
 
   // ---------- Entité ----------
+  ENT_SCALE: 1.6,           // taille de base ; étiré verticalement dans setupEntity → silhouette haute et fine
   ENT_BASE_DIST: 42,
   ENT_MIN_DIST: 14,
   ENT_APPROACH: 5.0,
@@ -173,40 +139,40 @@ const CONFIG = {
   MASTER_VOL: 0.5,
 };
 
-/* ---------------------------------------------------------------------------
-   IMPORT DE MODÈLES 3D (optionnel).
-   Laisse '' pour utiliser la géométrie procédurale. Sinon colle une URL de .glb
-   accessible en CORS. Exemples de sources CC0 : Khronos glTF-Sample-Models,
-   Quaternius, Poly Pizza (télécharge le .glb et héberge-le à côté de index.html).
-   Ex. local recommandé (le plus fiable) :  tree: 'models/pine.glb'
---------------------------------------------------------------------------- */
-const MODELS = {
-  tree:   '',   // ex: 'models/pine_tree.glb'  — remplace les arbres procéduraux
-  entity: '',   // ex: 'models/figure.glb'     — remplace la silhouette de l'Entité
-  treeScale: 1.0,
-  entityScale: 1.0,
+// Chemins des modèles. treeSet = arbres piochés au hasard.
+const ASSETS = {
+  base: 'models/kit/',
+  entity: 'models/Skeleton_Mage.glb',
+  treeSet: ['tree_dead_large','tree_dead_medium','tree_dead_small','tree_dead_large_decorated',
+            'tree_pine_orange_large','tree_pine_orange_medium','tree_pine_orange_small'],
+  graves:  ['gravestone','grave_A','grave_B','gravemarker_A','gravemarker_B'],
+  crypts:  ['crypt','coffin'],
+  fences:  ['fence','fence_broken','fence_seperate','fence_seperate_broken'],
+  lanterns:['lantern_standing','post_lantern','pumpkin_orange_jackolantern'],
+  props:   ['skull','post_skull','pumpkin_orange_small','bone_A'],
 };
 
 /* ============================ ÉTAT GLOBAL ============================ */
 let renderer, scene, camera, clock;
-let running = false, gameOver = false;
+let running = false, gameOver = false, assetsReady = false;
 
 const keys = {};
 let yaw = 0, pitch = 0;
 let stamina = CONFIG.STAMINA_MAX;
 let bob = 0;
 
-let trees = [];               // {x,z,r}
-let treeTemplate = null;      // modèle GLTF d'arbre si importé
+let colliders = [];           // {x,z,r} tout ce qui bloque le joueur
+let treeSpots = [];           // {x,z,r} arbres (pour accrocher les pages)
 let pages = [], pagesCollected = 0;
 let fireflies = null, fireflyData = [];
+let flames = [];              // lumières vacillantes (lanternes/citrouilles)
 
+let templates = {};           // modèles GLTF préchargés (clonables)
 let entity = null, entityActive = false, entityDist = CONFIG.ENT_BASE_DIST;
-let teleportTimer = 0, stareTime = 0, dangerLevel = 0, elapsed = 0;
-let entitySwayPhase = 0;
+let entityMixer = null, entityActions = {}, entityCurrent = null;
+let teleportTimer = 0, stareTime = 0, dangerLevel = 0, elapsed = 0, entitySwayPhase = 0;
 
 let flashlight, flashOn = true, flashFlicker = 0;
-
 const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
 
 /* ============================ AUDIO (Web Audio API) ============================ */
@@ -252,30 +218,20 @@ const Audio = {
 function makeGroundTexture(){
   const s=512; const c=document.createElement('canvas'); c.width=c.height=s; const g=c.getContext('2d');
   g.fillStyle='#0b0f0b'; g.fillRect(0,0,s,s);
-  // taches douces de mousse/terre (plusieurs couches pour éviter l'aspect "bruit TV")
   for(let i=0;i<900;i++){ const x=Math.random()*s,y=Math.random()*s,r=2+Math.random()*22;
     const grd=g.createRadialGradient(x,y,0,x,y,r); const v=6+Math.random()*22;
     grd.addColorStop(0,`rgba(${v*0.6|0},${v*1.1|0},${v*0.5|0},0.5)`); grd.addColorStop(1,'rgba(0,0,0,0)');
     g.fillStyle=grd; g.beginPath(); g.arc(x,y,r,0,7); g.fill(); }
-  // fin grain
   const img=g.getImageData(0,0,s,s), d=img.data;
   for(let i=0;i<d.length;i+=4){ const n=(Math.random()-0.5)*10; d[i]+=n*0.6; d[i+1]+=n; d[i+2]+=n*0.5; }
   g.putImageData(img,0,0);
-  const tex=new THREE.CanvasTexture(c); tex.wrapS=tex.wrapT=THREE.RepeatWrapping; tex.repeat.set(48,48);
-  tex.anisotropy=4; return tex;
+  const tex=new THREE.CanvasTexture(c); tex.wrapS=tex.wrapT=THREE.RepeatWrapping; tex.repeat.set(48,48); tex.anisotropy=4; return tex;
 }
 function makeGroundBump(){
   const s=256; const c=document.createElement('canvas'); c.width=c.height=s; const g=c.getContext('2d');
   const img=g.createImageData(s,s), d=img.data;
   for(let i=0;i<d.length;i+=4){ const v=128+(Math.random()-0.5)*90; d[i]=d[i+1]=d[i+2]=v; d[i+3]=255; }
   g.putImageData(img,0,0); const tex=new THREE.CanvasTexture(c); tex.wrapS=tex.wrapT=THREE.RepeatWrapping; tex.repeat.set(48,48); return tex;
-}
-function makeBarkTexture(){
-  const s=128; const c=document.createElement('canvas'); c.width=c.height=s; const g=c.getContext('2d');
-  g.fillStyle='#241a12'; g.fillRect(0,0,s,s);
-  for(let i=0;i<40;i++){ g.strokeStyle=`rgba(${20+Math.random()*30|0},${14+Math.random()*20|0},8,0.6)`; g.lineWidth=1+Math.random()*2;
-    g.beginPath(); const x=Math.random()*s; g.moveTo(x,0); g.bezierCurveTo(x+10,s/3,x-10,2*s/3,x+ (Math.random()*8-4),s); g.stroke(); }
-  const tex=new THREE.CanvasTexture(c); tex.wrapS=tex.wrapT=THREE.RepeatWrapping; tex.repeat.set(1,3); return tex;
 }
 function makePageTexture(){
   const w=128,h=160; const c=document.createElement('canvas'); c.width=w; c.height=h; const g=c.getContext('2d');
@@ -289,15 +245,6 @@ function makePageTexture(){
   for(let i=0;i<5;i++){ g.beginPath(); g.moveTo(20,132+i*5); g.lineTo(108,132+i*5+(Math.random()*2-1)); g.stroke(); }
   return new THREE.CanvasTexture(c);
 }
-function makeFaceTexture(){
-  const s=128; const c=document.createElement('canvas'); c.width=c.height=s; const g=c.getContext('2d');
-  const grd=g.createRadialGradient(64,60,10,64,64,70); grd.addColorStop(0,'#f2f2f4'); grd.addColorStop(1,'#c9c9cf');
-  g.fillStyle=grd; g.fillRect(0,0,s,s);
-  g.fillStyle='#000'; g.beginPath(); g.ellipse(44,54,12,19,0,0,7); g.fill(); g.beginPath(); g.ellipse(84,54,12,19,0,0,7); g.fill();
-  g.fillStyle='rgba(0,0,0,0.14)'; g.beginPath(); g.ellipse(64,98,11,6,0,0,7); g.fill();
-  return new THREE.CanvasTexture(c);
-}
-// Halo doux (lune, lucioles, glow torche) — dégradé radial blanc→transparent
 function makeGlowTexture(r,gc,b){
   const s=128; const c=document.createElement('canvas'); c.width=c.height=s; const g=c.getContext('2d');
   const grd=g.createRadialGradient(64,64,0,64,64,64);
@@ -310,8 +257,8 @@ function initThree(){
   renderer = new THREE.WebGLRenderer({ antialias:true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
   renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.outputEncoding = THREE.sRGBEncoding;              // couleurs correctes
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;         // rendu ciné
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
   document.body.appendChild(renderer.domElement);
 
@@ -332,74 +279,82 @@ function initThree(){
   buildFlashlight();
   buildFireflies();
 
-  // Décor : rochers + troncs couchés
-  buildRocks();
-  buildLogs();
-
-  // Arbres + Entité (procédural par défaut, remplacés si un modèle est chargé)
-  loadModelsThenBuild();
-
   window.addEventListener('resize', onResize);
 }
 
 function buildSky(){
-  // Étoiles : nuage de points sur un dôme lointain
   const N=1200, pos=new Float32Array(N*3);
   for(let i=0;i<N;i++){ const th=Math.random()*Math.PI*2, ph=Math.acos(Math.random()*0.6+0.1), R=260;
     pos[i*3]=Math.sin(ph)*Math.cos(th)*R; pos[i*3+1]=Math.cos(ph)*R+40; pos[i*3+2]=Math.sin(ph)*Math.sin(th)*R; }
   const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
-  const mat=new THREE.PointsMaterial({ color:0x9fb4d8, size:1.1, sizeAttenuation:false, transparent:true, opacity:0.8, fog:false });
-  scene.add(new THREE.Points(geo,mat));
-  // Lune : sprite lumineux
+  scene.add(new THREE.Points(geo,new THREE.PointsMaterial({ color:0x9fb4d8, size:1.1, sizeAttenuation:false, transparent:true, opacity:0.8, fog:false })));
   const moon=new THREE.Sprite(new THREE.SpriteMaterial({ map:makeGlowTexture(210,225,255), transparent:true, fog:false, depthWrite:false }));
   moon.scale.set(60,60,1); moon.position.set(-120,120,-160); scene.add(moon);
   const disc=new THREE.Mesh(new THREE.CircleGeometry(9,32), new THREE.MeshBasicMaterial({ color:0xd8e2ff, fog:false }));
   disc.position.set(-120,120,-159); scene.add(disc);
 }
-
 function buildGround(){
-  const mat=new THREE.MeshStandardMaterial({
-    map:makeGroundTexture(), bumpMap:makeGroundBump(), bumpScale:0.15, roughness:1, metalness:0, color:0x8a8a8a
-  });
-  const g=new THREE.Mesh(new THREE.PlaneGeometry(CONFIG.WORLD_SIZE*3, CONFIG.WORLD_SIZE*3, 1,1), mat);
-  g.rotation.x=-Math.PI/2; scene.add(g);
-  // Brume au sol : quelques plans translucides horizontaux
+  const mat=new THREE.MeshStandardMaterial({ map:makeGroundTexture(), bumpMap:makeGroundBump(), bumpScale:0.15, roughness:1, metalness:0, color:0x8a8a8a });
+  const g=new THREE.Mesh(new THREE.PlaneGeometry(CONFIG.WORLD_SIZE*3, CONFIG.WORLD_SIZE*3), mat); g.rotation.x=-Math.PI/2; scene.add(g);
   const mist=makeGlowTexture(120,135,150);
-  for(let i=0;i<14;i++){ const m=new THREE.Mesh(new THREE.PlaneGeometry(50,50),
-      new THREE.MeshBasicMaterial({ map:mist, transparent:true, opacity:0.06, depthWrite:false })); m.rotation.x=-Math.PI/2;
-    m.position.set((Math.random()*2-1)*CONFIG.WORLD_SIZE, 0.4+Math.random()*1.2, (Math.random()*2-1)*CONFIG.WORLD_SIZE); scene.add(m); }
+  for(let i=0;i<14;i++){ const m=new THREE.Mesh(new THREE.PlaneGeometry(50,50), new THREE.MeshBasicMaterial({ map:mist, transparent:true, opacity:0.06, depthWrite:false }));
+    m.rotation.x=-Math.PI/2; m.position.set((Math.random()*2-1)*CONFIG.WORLD_SIZE, 0.4+Math.random()*1.2, (Math.random()*2-1)*CONFIG.WORLD_SIZE); scene.add(m); }
 }
-
 function buildFlashlight(){
   flashlight = new THREE.SpotLight(0xfff2d0, 3.4, 65, Math.PI/7, 0.4, 1.3);
   flashlight.position.set(0,0,0.2); flashlight.target.position.set(0,0,-1);
   camera.add(flashlight); camera.add(flashlight.target);
-  // petit halo de faisceau visible dans le brouillard
   const glow=new THREE.Sprite(new THREE.SpriteMaterial({ map:makeGlowTexture(255,240,200), transparent:true, opacity:0.12, depthWrite:false, fog:false }));
   glow.scale.set(3,3,1); glow.position.set(0,0,-2); camera.add(glow); flashlight.userData.glow=glow;
 }
-
 function buildFireflies(){
-  const N=CONFIG.FIREFLY_COUNT, pos=new Float32Array(N*3);
-  fireflyData=[];
+  const N=60, pos=new Float32Array(N*3); fireflyData=[];
   for(let i=0;i<N;i++){ const x=(Math.random()*2-1)*CONFIG.WORLD_SIZE*0.8, z=(Math.random()*2-1)*CONFIG.WORLD_SIZE*0.8, y=0.5+Math.random()*3;
     pos[i*3]=x; pos[i*3+1]=y; pos[i*3+2]=z; fireflyData.push({x,z,y,ph:Math.random()*7}); }
   const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
-  const mat=new THREE.PointsMaterial({ map:makeGlowTexture(180,255,150), color:0xaaff88, size:1.4, transparent:true, opacity:0.9, depthWrite:false, blending:THREE.AdditiveBlending });
-  fireflies=new THREE.Points(geo,mat); scene.add(fireflies);
+  fireflies=new THREE.Points(geo,new THREE.PointsMaterial({ map:makeGlowTexture(180,255,150), color:0xaaff88, size:1.4, transparent:true, opacity:0.9, depthWrite:false, blending:THREE.AdditiveBlending }));
+  scene.add(fireflies);
 }
 
-const _barkTex = null;
+/* ---------------------------------------------------------------------------
+   PRÉCHARGEMENT DES MODÈLES 3D (GLTF) puis construction du monde.
+   Chaque modèle est chargé une fois puis cloné. En cas d'échec → procédural.
+--------------------------------------------------------------------------- */
+function preloadAssets(done){
+  const loader = (typeof THREE.GLTFLoader==='function') ? new THREE.GLTFLoader() : null;
+  if(!loader){ console.warn('GLTFLoader indisponible → tout procédural'); done(); return; }
+
+  // Liste unique des .gltf de décor à charger
+  const kit = [].concat(ASSETS.treeSet, ASSETS.graves, ASSETS.crypts, ASSETS.fences, ASSETS.lanterns, ASSETS.props);
+  let total = kit.length + 1, loaded = 0;
+  const tick = ()=>{ loaded++; const pct=Math.round(loaded/total*100);
+    document.getElementById('startBtn').textContent = 'CHARGEMENT… '+pct+'%'; if(loaded>=total) done(); };
+
+  // Décor
+  kit.forEach(name=>{
+    loader.load(ASSETS.base+name+'.gltf',
+      gltf=>{ const root=gltf.scene; root.traverse(o=>{ if(o.isMesh){ o.frustumCulled=true; if(o.material){ o.material.metalness=0; o.material.roughness=1; } } });
+        templates[name]=root; tick(); },
+      undefined, err=>{ console.warn('KO '+name, err); tick(); });
+  });
+  // Entité (glb rigged)
+  loader.load(ASSETS.entity,
+    gltf=>{ setupEntity(gltf); tick(); },
+    undefined, err=>{ console.warn('Entité KO → procédurale', err); tick(); });
+}
+
+// Clone un template de décor, ou fabrique un arbre procédural en secours.
+function spawn(name){ if(templates[name]) return templates[name].clone(true); return null; }
 function makeProcTree(){
-  const g=new THREE.Group();
-  const h=9+Math.random()*7, r=0.5+Math.random()*0.4;
-  const trunkMat=new THREE.MeshStandardMaterial({ map:makeBarkTexture(), color:0x6a5540, roughness:1 });
-  const trunk=new THREE.Mesh(new THREE.CylinderGeometry(r*0.6,r,h,8), trunkMat); trunk.position.y=h/2; g.add(trunk);
-  const leafMat=new THREE.MeshStandardMaterial({ color:0x0e2416, roughness:1 });
-  for(let k=0;k<3;k++){ const ch=4.5+Math.random()*3; const cone=new THREE.Mesh(new THREE.ConeGeometry(3-k*0.7,ch,9),leafMat);
-    cone.position.y=h-1.5+k*2.3; cone.rotation.y=Math.random(); g.add(cone); }
-  g.userData.radius=r+0.5;
+  const g=new THREE.Group(); const h=8+Math.random()*5;
+  const trunk=new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.5,h,7), new THREE.MeshStandardMaterial({ color:0x2a1f16, roughness:1 })); trunk.position.y=h/2; g.add(trunk);
+  const leaf=new THREE.MeshStandardMaterial({ color:0x0e2416, roughness:1 });
+  for(let k=0;k<2;k++){ const c=new THREE.Mesh(new THREE.ConeGeometry(2.6-k*0.6,5,8),leaf); c.position.y=h-1+k*2; g.add(c); }
   return g;
+}
+
+function buildWorld(){
+  buildTrees(); buildGraveyard(); buildLanterns(); buildProps(); buildEntity(); buildPages();
 }
 
 function buildTrees(){
@@ -408,121 +363,117 @@ function buildTrees(){
     guard++;
     const x=(Math.random()*2-1)*(CONFIG.WORLD_SIZE-10), z=(Math.random()*2-1)*(CONFIG.WORLD_SIZE-10);
     if(Math.hypot(x,z)<8) continue;
-    if(trees.some(t=>Math.hypot(t.x-x,t.z-z)<CONFIG.TREE_MIN_DIST)) continue;
-    let mesh, radius;
-    if(treeTemplate){ mesh=treeTemplate.clone(true); const s=(0.8+Math.random()*0.5)*MODELS.treeScale; mesh.scale.setScalar(s);
-      mesh.rotation.y=Math.random()*Math.PI*2; radius=1.0; }
-    else { mesh=makeProcTree(); radius=mesh.userData.radius; }
+    if(treeSpots.some(t=>Math.hypot(t.x-x,t.z-z)<6)) continue;
+    const name=ASSETS.treeSet[(Math.random()*ASSETS.treeSet.length)|0];
+    const pine=name.indexOf('pine')>=0;
+    let mesh=spawn(name); let r;
+    if(mesh){ const s=(pine?1.0:1.4)*(0.85+Math.random()*0.5); mesh.scale.setScalar(s); mesh.rotation.y=Math.random()*Math.PI*2; r=(pine?1.6:1.0)*s*0.7; }
+    else { mesh=makeProcTree(); r=1.2; }
     mesh.position.set(x,0,z); scene.add(mesh);
-    trees.push({ x,z,r:radius });
+    const rec={x,z,r}; treeSpots.push(rec); colliders.push(rec);
     placed++;
   }
-  buildPages(); // les pages ont besoin des positions d'arbres
 }
+function placeScatter(list, count, scaleFn, collideR){
+  for(let i=0;i<count;i++){
+    const name=list[(Math.random()*list.length)|0]; let mesh=spawn(name); if(!mesh) continue;
+    const x=(Math.random()*2-1)*(CONFIG.WORLD_SIZE-8), z=(Math.random()*2-1)*(CONFIG.WORLD_SIZE-8);
+    if(Math.hypot(x,z)<6){ i--; continue; }
+    const s=scaleFn(); mesh.scale.setScalar(s); mesh.rotation.y=Math.random()*Math.PI*2; mesh.position.set(x,0,z);
+    scene.add(mesh);
+    if(collideR>0) colliders.push({x,z,r:collideR*s});
+    if(name.indexOf('lantern')>=0 || name.indexOf('pumpkin_orange_jackolantern')>=0){
+      // Lumière chaude vacillante posée sur la lanterne/citrouille
+      const warm = name.indexOf('pumpkin')>=0 ? 0xff7a1a : 0xffb347;
+      const yTop = name.indexOf('post')>=0 ? 2.2*s : 0.7*s;
+      const L=new THREE.PointLight(warm, 1.6, 10, 2); L.position.set(x, yTop, z); scene.add(L);
+      flames.push({ light:L, base:1.6, ph:Math.random()*7 });
+    }
+  }
+}
+function buildGraveyard(){
+  placeScatter(ASSETS.graves, CONFIG.GRAVE_COUNT, ()=>0.9+Math.random()*0.5, 0.7);
+  placeScatter(ASSETS.crypts, CONFIG.CRYPT_COUNT, ()=>0.9+Math.random()*0.3, 2.6);
+  placeScatter(ASSETS.fences, CONFIG.FENCE_COUNT, ()=>1.0, 0);   // grilles décoratives (pas de collision : trop fines)
+}
+function buildLanterns(){ placeScatter(ASSETS.lanterns, CONFIG.LANTERN_COUNT, ()=>1.1+Math.random()*0.6, 0.4); }
+function buildProps(){ placeScatter(ASSETS.props, CONFIG.PROP_COUNT, ()=>0.8+Math.random()*0.5, 0); }
 
-function buildRocks(){
-  const mat=new THREE.MeshStandardMaterial({ color:0x3a3d42, roughness:1, flatShading:true });
-  for(let i=0;i<CONFIG.ROCK_COUNT;i++){ const s=0.4+Math.random()*1.4;
-    const m=new THREE.Mesh(new THREE.DodecahedronGeometry(s,0),mat);
-    m.position.set((Math.random()*2-1)*CONFIG.WORLD_SIZE,-s*0.3,(Math.random()*2-1)*CONFIG.WORLD_SIZE);
-    m.rotation.set(Math.random(),Math.random(),Math.random()); scene.add(m); }
+/* ---- Entité : squelette-mage rigged + animé (ou fallback procédural) ---- */
+function setupEntity(gltf){
+  const model=gltf.scene;
+  // Étirement non-uniforme : le petit squelette "chibi" devient une silhouette haute et fine.
+  const S=CONFIG.ENT_SCALE;
+  model.scale.set(S*0.8, S*1.35, S*0.8);
+  // Assombrissement en ombre : on ne voit qu'une forme sombre qui capte à peine la torche.
+  model.traverse(o=>{ if(o.isMesh){ o.frustumCulled=false;
+    const mats=Array.isArray(o.material)?o.material:[o.material];
+    mats.forEach(mt=>{ if(!mt) return; if(mt.color) mt.color.multiplyScalar(0.10);
+      mt.emissive=new THREE.Color(0x15151c); mt.emissiveIntensity=0.7; mt.metalness=0; mt.roughness=1; }); } });
+  const box=new THREE.Box3().setFromObject(model); model.position.y=-box.min.y;   // pieds au sol
+  const grp=new THREE.Group(); grp.add(model);
+  entityMixer=new THREE.AnimationMixer(model);
+  const clips=gltf.animations||[];
+  const find=n=>THREE.AnimationClip.findByName(clips,n);
+  entityActions={ idle: find('Idle')||find('Spellcasting'), walk: find('Walking_C')||find('Walking_A')||find('Walking_B'), run: find('Running_A')||find('Running_B')||find('Running_C') };
+  entity=grp; entity.userData.imported=true;
 }
-function buildLogs(){
-  const mat=new THREE.MeshStandardMaterial({ map:makeBarkTexture(), color:0x5a4636, roughness:1 });
-  for(let i=0;i<CONFIG.LOG_COUNT;i++){ const len=3+Math.random()*4, r=0.4+Math.random()*0.3;
-    const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,len,8),mat); m.rotation.z=Math.PI/2; m.rotation.y=Math.random()*Math.PI;
-    m.position.set((Math.random()*2-1)*CONFIG.WORLD_SIZE, r*0.8, (Math.random()*2-1)*CONFIG.WORLD_SIZE); scene.add(m); }
+function makeProcEntity(){
+  const grp=new THREE.Group();
+  const m=new THREE.MeshStandardMaterial({ color:0x08080b, roughness:0.9, emissive:0x050508 });
+  [-1,1].forEach(s=>{ const leg=new THREE.Mesh(new THREE.CylinderGeometry(0.13,0.11,2,8),m); leg.position.set(s*0.18,1,0); grp.add(leg); });
+  const torso=new THREE.Mesh(new THREE.CylinderGeometry(0.28,0.34,1.7,10),m); torso.position.y=2.85; grp.add(torso);
+  grp.add(Object.assign(new THREE.Mesh(new THREE.SphereGeometry(0.3,12,10),m),{position:new THREE.Vector3(0,3.6,0)}));
+  [-1,1].forEach(s=>{ const arm=new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.05,2.7,6),m); arm.position.set(s*0.32,2.3,0); arm.rotation.z=s*0.1; grp.add(arm); });
+  const head=new THREE.Mesh(new THREE.SphereGeometry(0.4,18,16),m); head.position.y=4.2; grp.add(head);
+  const face=new THREE.Mesh(new THREE.PlaneGeometry(0.55,0.6), new THREE.MeshBasicMaterial({ color:0xe8e8ea, transparent:true })); face.position.set(0,4.22,0.4); grp.add(face);
+  return grp;
+}
+function buildEntity(){
+  if(!entity) entity=makeProcEntity();
+  entity.visible=false; scene.add(entity);
+}
+function playEnt(name){
+  if(!entityMixer) return; const clip=entityActions[name]; if(!clip) return;
+  const action=entityMixer.clipAction(clip); if(entityCurrent===action) return;
+  action.reset().setEffectiveWeight(1).fadeIn(0.3).play();
+  if(entityCurrent) entityCurrent.fadeOut(0.3);
+  entityCurrent=action;
 }
 
 function buildPages(){
   const tex=makePageTexture();
-  const spots=trees.slice().sort(()=>Math.random()-0.5);
+  const spots=treeSpots.slice().sort(()=>Math.random()-0.5);
   for(let i=0;i<CONFIG.PAGE_COUNT;i++){
     const mat=new THREE.MeshStandardMaterial({ map:tex, emissive:0xffffff, emissiveMap:tex, emissiveIntensity:0.4, side:THREE.DoubleSide, roughness:0.9 });
     const page=new THREE.Mesh(new THREE.PlaneGeometry(0.9,1.15), mat);
     const spot=spots[i]; let px,pz,ang;
-    if(spot){ ang=Math.random()*Math.PI*2; px=spot.x+Math.cos(ang)*(spot.r*0.9); pz=spot.z+Math.sin(ang)*(spot.r*0.9); }
+    if(spot){ ang=Math.random()*Math.PI*2; px=spot.x+Math.cos(ang)*(spot.r+0.4); pz=spot.z+Math.sin(ang)*(spot.r+0.4); }
     else { ang=Math.random()*Math.PI*2; px=(Math.random()*2-1)*(CONFIG.WORLD_SIZE-15); pz=(Math.random()*2-1)*(CONFIG.WORLD_SIZE-15); }
     page.position.set(px,1.6,pz); page.lookAt(px+Math.cos(ang),1.6,pz+Math.sin(ang));
     page.userData.baseY=1.6; page.userData.phase=Math.random()*Math.PI*2;
-    // petit halo derrière la page pour qu'elle "brille" dans le noir
     const halo=new THREE.Sprite(new THREE.SpriteMaterial({ map:makeGlowTexture(230,230,210), transparent:true, opacity:0.25, depthWrite:false, fog:false }));
     halo.scale.set(2,2.4,1); page.add(halo);
     scene.add(page); pages.push(page);
   }
 }
 
-function makeProcEntity(){
-  const grp=new THREE.Group();
-  const suitMat=new THREE.MeshStandardMaterial({ color:0x08080b, roughness:0.85, metalness:0.05, emissive:0x020204 });
-  // Jambes
-  [-1,1].forEach(s=>{ const leg=new THREE.Mesh(new THREE.CylinderGeometry(0.13,0.11,2.0,8),suitMat); leg.position.set(s*0.18,1.0,0); grp.add(leg); });
-  // Torse fin allongé
-  const torso=new THREE.Mesh(new THREE.CylinderGeometry(0.28,0.34,1.7,10),suitMat); torso.position.y=2.85; grp.add(torso);
-  const shoulder=new THREE.Mesh(new THREE.SphereGeometry(0.3,12,10),suitMat); shoulder.position.y=3.6; grp.add(shoulder);
-  // Bras longs qui pendent (référencés pour animation)
-  const arms=[];
-  [-1,1].forEach(s=>{ const arm=new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.05,2.7,6),suitMat);
-    arm.position.set(s*0.32,2.3,0); arm.rotation.z=s*0.1; grp.add(arm); arms.push(arm); });
-  // Cou + tête
-  const neck=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.11,0.35,8),suitMat); neck.position.y=3.85; grp.add(neck);
-  const head=new THREE.Mesh(new THREE.SphereGeometry(0.4,18,16),suitMat); head.position.y=4.2; grp.add(head);
-  // Visage lumineux
-  const faceMat=new THREE.MeshStandardMaterial({ map:makeFaceTexture(), emissive:0xffffff, emissiveMap:makeFaceTexture(), emissiveIntensity:0.5, transparent:true });
-  const face=new THREE.Mesh(new THREE.PlaneGeometry(0.55,0.6),faceMat); face.position.set(0,4.22,0.38); grp.add(face);
-  grp.userData.arms=arms; grp.userData.torso=torso; grp.userData.head=head;
-  return grp;
-}
-
-function buildEntity(){
-  let model;
-  if(entity && entity.userData.imported){ model=entity; } // déjà construit depuis GLTF
-  else { model=makeProcEntity(); }
-  entity=model; entity.visible=false; scene.add(entity);
-}
-
-/* ---- Chargement GLTF (avec fallback) ---- */
-function loadModelsThenBuild(){
-  const loader = (typeof THREE.GLTFLoader==='function') ? new THREE.GLTFLoader() : null;
-  const tasks=[];
-
-  if(loader && MODELS.tree){
-    tasks.push(new Promise(res=>{
-      loader.load(MODELS.tree, gltf=>{ treeTemplate=gltf.scene; treeTemplate.traverse(o=>{o.castShadow=false;}); res(); },
-        undefined, err=>{ console.warn('Arbre GLTF échoué → procédural', err); res(); });
-    }));
-  }
-  if(loader && MODELS.entity){
-    tasks.push(new Promise(res=>{
-      loader.load(MODELS.entity, gltf=>{ const m=gltf.scene; m.scale.setScalar(MODELS.entityScale); m.userData.imported=true; entity=m; res(); },
-        undefined, err=>{ console.warn('Entité GLTF échouée → procédurale', err); res(); });
-    }));
-  }
-
-  Promise.all(tasks).then(()=>{ buildTrees(); buildEntity(); });
-}
-
 /* ============================ CONTRÔLES ============================ */
-let skipNextMouse=false;   // ignore le 1er delta après (dé)verrouillage (fix spike)
+let skipNextMouse=false;
 function bindControls(){
   document.addEventListener('keydown', e=>{ keys[e.code]=true;
     if(e.code==='KeyF' && running) toggleFlash();
     if(e.code==='KeyE' && running) tryPickPage(); });
   document.addEventListener('keyup', e=>{ keys[e.code]=false; });
-
   document.addEventListener('mousemove', e=>{
     if(document.pointerLockElement!==renderer.domElement) return;
-    if(skipNextMouse){ skipNextMouse=false; return; }          // saute le delta géant du re-lock
-    let mx=e.movementX, my=e.movementY;
-    if(!isFinite(mx)||!isFinite(my)) return;                    // garde-fou NaN/Infinity
-    const M=CONFIG.MOUSE_MAX_DELTA;
-    mx=clamp(mx,-M,M); my=clamp(my,-M,M);                       // CLAMP anti-spike Chromium
-    yaw   -= mx*CONFIG.MOUSE_SENS;
-    pitch -= my*CONFIG.MOUSE_SENS;
-    pitch = clamp(pitch, -Math.PI/2+0.05, Math.PI/2-0.05);
+    if(skipNextMouse){ skipNextMouse=false; return; }
+    let mx=e.movementX, my=e.movementY; if(!isFinite(mx)||!isFinite(my)) return;
+    const M=CONFIG.MOUSE_MAX_DELTA; mx=clamp(mx,-M,M); my=clamp(my,-M,M);
+    yaw-=mx*CONFIG.MOUSE_SENS; pitch-=my*CONFIG.MOUSE_SENS;
+    pitch=clamp(pitch,-Math.PI/2+0.05,Math.PI/2-0.05);
   });
   document.addEventListener('mousedown', ()=>{ if(running) tryPickPage(); });
-
   document.addEventListener('pointerlockchange', ()=>{ skipNextMouse=true; });
   document.addEventListener('pointerlockerror', ()=>{ skipNextMouse=true; });
 }
@@ -538,8 +489,7 @@ function tryPickPage(){
   if(!pages.length) return;
   const camDir=new THREE.Vector3(); camera.getWorldDirection(camDir); const camPos=camera.position;
   for(const page of pages){ const to=new THREE.Vector3().subVectors(page.position,camPos); const dist=to.length();
-    if(dist>CONFIG.PAGE_PICK_DIST) continue; to.normalize(); if(to.dot(camDir)<CONFIG.PAGE_RAY_DOT) continue;
-    collectPage(page); return; }
+    if(dist>CONFIG.PAGE_PICK_DIST) continue; to.normalize(); if(to.dot(camDir)<CONFIG.PAGE_RAY_DOT) continue; collectPage(page); return; }
 }
 function collectPage(page){
   scene.remove(page); pages.splice(pages.indexOf(page),1); pagesCollected++;
@@ -551,8 +501,7 @@ function flashWhisper(){ const msgs=['NE TE RETOURNE PAS','IL TE VOIT','ENCORE�
   const el=document.getElementById('whisper'); el.textContent=msgs[Math.floor(Math.random()*msgs.length)];
   el.style.opacity='0.9'; setTimeout(()=>{el.style.opacity='0';},900); }
 function updateEntityAggression(){ const t=pagesCollected/CONFIG.PAGE_COUNT;
-  entityDist=THREE.MathUtils.lerp(CONFIG.ENT_BASE_DIST,CONFIG.ENT_MIN_DIST,t);
-  if(pagesCollected>=1) entityActive=true; }
+  entityDist=THREE.MathUtils.lerp(CONFIG.ENT_BASE_DIST,CONFIG.ENT_MIN_DIST,t); if(pagesCollected>=1) entityActive=true; }
 
 /* ============================ ENTITÉ : IA ============================ */
 function entityTeleportDelay(){ const t=pagesCollected/CONFIG.PAGE_COUNT; return THREE.MathUtils.lerp(CONFIG.ENT_TELEPORT_BASE,CONFIG.ENT_TELEPORT_MIN,t); }
@@ -571,22 +520,22 @@ function entityInView(){
   return to.dot(look)>CONFIG.ENT_VIEW_DOT;
 }
 function updateEntity(dt){
+  if(entityMixer) entityMixer.update(dt);
   if(!entityActive||!entity) return;
   if(elapsed<CONFIG.ENT_FIRST_DELAY) return;
   entity.lookAt(camera.position.x,0,camera.position.z);
-  // léger balancement inquiétant
-  entitySwayPhase+=dt; if(entity.userData.arms){ entity.userData.arms.forEach((a,i)=>{ a.rotation.x=Math.sin(entitySwayPhase*0.8+i)*0.08; });
-    if(entity.userData.torso) entity.userData.torso.rotation.z=Math.sin(entitySwayPhase*0.5)*0.02; }
+  entitySwayPhase+=dt;
 
   const p=camera.position; const dist=Math.hypot(entity.position.x-p.x,entity.position.z-p.z); const looking=entityInView();
-
-  if(!entity.visible){ teleportEntity(); teleportTimer=entityTeleportDelay(); return; }
+  if(!entity.visible){ teleportEntity(); teleportTimer=entityTeleportDelay(); playEnt('idle'); return; }
 
   if(looking){
+    playEnt('idle');   // figée quand on la regarde
     if(dist<CONFIG.ENT_DANGER_DIST){ const proximity=1-(dist-CONFIG.ENT_KILL_DIST)/(CONFIG.ENT_DANGER_DIST-CONFIG.ENT_KILL_DIST);
       stareTime+=dt*(0.4+Math.max(0,proximity)*1.4); }
     else stareTime=Math.max(0,stareTime-dt*0.5);
   } else {
+    playEnt(pagesCollected>=4?'run':'walk');   // marche/court quand on ne la voit pas
     stareTime=Math.max(0,stareTime-dt*0.8);
     const dir=new THREE.Vector3(p.x-entity.position.x,0,p.z-entity.position.z).normalize();
     const step=CONFIG.ENT_APPROACH*(0.6+pagesCollected/CONFIG.PAGE_COUNT)*dt;
@@ -594,15 +543,14 @@ function updateEntity(dt){
     teleportTimer-=dt; if(teleportTimer<=0){ teleportEntity(); teleportTimer=entityTeleportDelay(); }
   }
 
-  let dNow=0;
-  if(dist<CONFIG.ENT_DANGER_DIST){ dNow=clamp(1-Math.max(0,(dist-CONFIG.ENT_KILL_DIST))/(CONFIG.ENT_DANGER_DIST-CONFIG.ENT_KILL_DIST),0,1); }
+  let dNow=0; if(dist<CONFIG.ENT_DANGER_DIST){ dNow=clamp(1-Math.max(0,(dist-CONFIG.ENT_KILL_DIST))/(CONFIG.ENT_DANGER_DIST-CONFIG.ENT_KILL_DIST),0,1); }
   dangerLevel=clamp(Math.max(dNow*0.7, stareTime/CONFIG.ENT_STARE_LIMIT),0,1);
   if(stareTime>=CONFIG.ENT_STARE_LIMIT) endGame(false);
 }
 
 /* ============================ COLLISIONS ============================ */
 function resolveCollisions(nx,nz){ let x=nx,z=nz;
-  for(const t of trees){ const dx=x-t.x,dz=z-t.z; const d=Math.hypot(dx,dz); const minD=t.r+CONFIG.PLAYER_RADIUS;
+  for(const t of colliders){ const dx=x-t.x,dz=z-t.z; const d=Math.hypot(dx,dz); const minD=t.r+CONFIG.PLAYER_RADIUS;
     if(d<minD&&d>0.0001){ const push=minD-d; x+=(dx/d)*push; z+=(dz/d)*push; } }
   const lim=CONFIG.WORLD_SIZE-2; x=clamp(x,-lim,lim); z=clamp(z,-lim,lim); return {x,z};
 }
@@ -614,23 +562,15 @@ function updatePlayer(dt){
   const {f,s}=movementDir(); const moving=(f!==0||s!==0);
   const wantSprint=(keys['ShiftLeft']||keys['ShiftRight'])&&moving&&f>=0;
   let sprinting=false;
-  if(wantSprint&&stamina>CONFIG.STAMINA_MIN_SPRINT){ sprinting=true; stamina-=CONFIG.STAMINA_DRAIN*dt; }
-  else stamina+=CONFIG.STAMINA_REGEN*dt;
+  if(wantSprint&&stamina>CONFIG.STAMINA_MIN_SPRINT){ sprinting=true; stamina-=CONFIG.STAMINA_DRAIN*dt; } else stamina+=CONFIG.STAMINA_REGEN*dt;
   stamina=clamp(stamina,0,CONFIG.STAMINA_MAX);
   const speed=sprinting?CONFIG.SPRINT_SPEED:CONFIG.WALK_SPEED;
-
-  const forward=new THREE.Vector3(-Math.sin(yaw),0,-Math.cos(yaw));
-  const right=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw));
-  const move=new THREE.Vector3().addScaledVector(forward,f).addScaledVector(right,s);
-  if(move.lengthSq()>0) move.normalize();
-
+  const forward=new THREE.Vector3(-Math.sin(yaw),0,-Math.cos(yaw)); const right=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw));
+  const move=new THREE.Vector3().addScaledVector(forward,f).addScaledVector(right,s); if(move.lengthSq()>0) move.normalize();
   const r=resolveCollisions(camera.position.x+move.x*speed*dt, camera.position.z+move.z*speed*dt);
   camera.position.x=r.x; camera.position.z=r.z;
-
-  if(moving){ bob+=dt*(sprinting?14:9); footTimer-=dt; const iv=sprinting?0.32:0.5; if(footTimer<=0){ Audio.footstep(); footTimer=iv; } }
-  else bob+=dt*2;
+  if(moving){ bob+=dt*(sprinting?14:9); footTimer-=dt; const iv=sprinting?0.32:0.5; if(footTimer<=0){ Audio.footstep(); footTimer=iv; } } else bob+=dt*2;
   camera.position.y=CONFIG.PLAYER_HEIGHT+Math.sin(bob)*(moving?0.06:0.015);
-
   document.getElementById('staminaBar').style.width=stamina+'%';
 }
 
@@ -647,24 +587,18 @@ function updateFireflies(dt){
   if(!fireflies) return; const pos=fireflies.geometry.attributes.position.array;
   for(let i=0;i<fireflyData.length;i++){ const fd=fireflyData[i]; fd.ph+=dt;
     pos[i*3]=fd.x+Math.sin(fd.ph*0.6)*1.5; pos[i*3+1]=fd.y+Math.sin(fd.ph*0.9)*0.4; pos[i*3+2]=fd.z+Math.cos(fd.ph*0.5)*1.5; }
-  fireflies.geometry.attributes.position.needsUpdate=true;
-  fireflies.material.opacity=0.5+Math.sin(elapsed*3)*0.3;
+  fireflies.geometry.attributes.position.needsUpdate=true; fireflies.material.opacity=0.5+Math.sin(elapsed*3)*0.3;
 }
-function updateFlashlight(dt){
-  if(!flashOn) return; // scintillement subtil, plus marqué quand le danger monte
-  flashFlicker+=dt*20; const base=3.4; const noise=Math.sin(flashFlicker)*0.1+ (Math.random()-0.5)*dangerLevel*1.2;
-  flashlight.intensity=base+noise;
-}
+function updateFlames(dt){ for(const fl of flames){ fl.ph+=dt*12; fl.light.intensity=fl.base*(0.75+Math.random()*0.25)+Math.sin(fl.ph)*0.15; } }
+function updateFlashlight(dt){ if(!flashOn) return; flashFlicker+=dt*20; flashlight.intensity=3.4+Math.sin(flashFlicker)*0.1+(Math.random()-0.5)*dangerLevel*1.2; }
 
 /* ============================ OVERLAY STATIQUE ============================ */
 const staticCanvas=document.getElementById('staticOverlay'); const sctx=staticCanvas.getContext('2d'); let staticBuf=null;
 function sizeStatic(){ staticCanvas.width=Math.floor(window.innerWidth/3); staticCanvas.height=Math.floor(window.innerHeight/3); staticBuf=sctx.createImageData(staticCanvas.width,staticCanvas.height); }
 function renderStatic(){
   if(!staticBuf) return; const d=staticBuf.data; for(let i=0;i<d.length;i+=4){ const v=Math.random()*255; d[i]=d[i+1]=d[i+2]=v; d[i+3]=255; }
-  sctx.putImageData(staticBuf,0,0);
-  staticCanvas.style.opacity=(0.02+dangerLevel*0.55).toFixed(3);
-  if(dangerLevel>0.6){ const j=(dangerLevel-0.6)*12;
-    renderer.domElement.style.transform=`translate(${(Math.random()*2-1)*j}px,${(Math.random()*2-1)*j}px) scale(1.03)`; }
+  sctx.putImageData(staticBuf,0,0); staticCanvas.style.opacity=(0.02+dangerLevel*0.55).toFixed(3);
+  if(dangerLevel>0.6){ const j=(dangerLevel-0.6)*12; renderer.domElement.style.transform=`translate(${(Math.random()*2-1)*j}px,${(Math.random()*2-1)*j}px) scale(1.03)`; }
   else renderer.domElement.style.transform='';
 }
 
@@ -680,13 +614,14 @@ function animate(){
   requestAnimationFrame(animate);
   const dt=Math.min(clock.getDelta(),0.05);
   if(running&&!gameOver){ elapsed+=dt; updatePlayer(dt); updatePages(dt); updateEntity(dt); updateHeart(dt);
-    updateFireflies(dt); updateFlashlight(dt); Audio.setDanger(dangerLevel); }
-  else { dangerLevel*=0.95; updateFireflies(dt); }
+    updateFireflies(dt); updateFlames(dt); updateFlashlight(dt); Audio.setDanger(dangerLevel); }
+  else { dangerLevel*=0.95; updateFireflies(dt); updateFlames(dt); if(entityMixer) entityMixer.update(dt); }
   renderStatic(); renderer.render(scene,camera);
 }
 
 /* ============================ ÉCRANS ============================ */
 function startGame(){
+  if(!assetsReady) return;
   if(!Audio.ctx) Audio.init(); else if(Audio.ctx.state==='suspended') Audio.ctx.resume();
   document.getElementById('titleScreen').style.display='none';
   document.getElementById('endScreen').style.display='none';
@@ -699,10 +634,8 @@ function endGame(victory){
   if(victory){ Audio.win(); Audio.setDanger(0); } else Audio.scare();
   setTimeout(()=>{ const end=document.getElementById('endScreen'); const title=document.getElementById('endTitle'); const text=document.getElementById('endText');
     document.getElementById('hud').style.display='none';
-    if(victory){ title.textContent='ÉCHAPPÉ'; title.className='win';
-      text.textContent=`Vous avez rassemblé les ${CONFIG.PAGE_COUNT} pages et survécu à la nuit. L'Entité s'est dissoute dans le brouillard… pour cette fois.`; }
-    else { title.textContent='ELLE VOUS A PRIS'; title.className='dead';
-      text.textContent=`Vous n'auriez jamais dû la fixer. Pages récupérées : ${pagesCollected}/${CONFIG.PAGE_COUNT}.`; }
+    if(victory){ title.textContent='ÉCHAPPÉ'; title.className='win'; text.textContent=`Vous avez rassemblé les ${CONFIG.PAGE_COUNT} pages et survécu à la nuit. L'Entité s'est dissoute dans le brouillard… pour cette fois.`; }
+    else { title.textContent='ELLE VOUS A PRIS'; title.className='dead'; text.textContent=`Vous n'auriez jamais dû la fixer. Pages récupérées : ${pagesCollected}/${CONFIG.PAGE_COUNT}.`; }
     end.style.display='flex'; }, victory?300:700);
 }
 function replay(){
@@ -715,8 +648,7 @@ function replay(){
 }
 
 /* ============================ INIT ============================ */
-function onResize(){ camera.aspect=window.innerWidth/window.innerHeight; camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth,window.innerHeight); sizeStatic(); }
+function onResize(){ camera.aspect=window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth,window.innerHeight); sizeStatic(); }
 function main(){
   clock=new THREE.Clock(); initThree(); bindControls(); sizeStatic();
   document.getElementById('pageTot').textContent=CONFIG.PAGE_COUNT;
@@ -724,6 +656,9 @@ function main(){
   document.getElementById('startBtn').addEventListener('click',startGame);
   document.getElementById('replayBtn').addEventListener('click',replay);
   animate();
+  // Précharge les modèles puis construit le monde et débloque le bouton COMMENCER.
+  preloadAssets(()=>{ buildWorld(); assetsReady=true;
+    const b=document.getElementById('startBtn'); b.disabled=false; b.textContent='COMMENCER'; });
 }
 if(window.THREE) main();
 else window.addEventListener('load',()=>{ if(window.THREE) main(); else document.getElementById('loading').textContent='ERREUR : Three.js non chargé'; });
