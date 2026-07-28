@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>THE PAGES — Slender Horror Prototype</title>
+<style>
+  /* ===================== STYLE / HUD ===================== */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
+  body { font-family: "Courier New", monospace; color: #cfcfcf; cursor: default; }
+  canvas { display: block; }
+
+  /* Overlay de statique/glitch (bruit) rendu sur un canvas 2D par-dessus la 3D */
+  #staticOverlay {
+    position: fixed; inset: 0; pointer-events: none; z-index: 10;
+    opacity: 0;                 /* piloté par JS selon la proximité de l'Entité */
+    mix-blend-mode: screen;
+  }
+
+  /* Vignette sombre permanente pour l'ambiance oppressante */
+  #vignette {
+    position: fixed; inset: 0; pointer-events: none; z-index: 9;
+    box-shadow: inset 0 0 22vw 12vw rgba(0,0,0,0.92);
+  }
+
+  /* ---------- HUD ---------- */
+  #hud {
+    position: fixed; inset: 0; pointer-events: none; z-index: 12;
+    display: none;              /* affiché seulement pendant le jeu */
+  }
+  #pageCounter {
+    position: absolute; top: 22px; left: 26px;
+    font-size: 22px; letter-spacing: 2px;
+    text-shadow: 0 0 8px #000, 0 0 14px #000;
+  }
+  #pageCounter .lbl { opacity: 0.6; font-size: 14px; }
+
+  /* Barre d'endurance */
+  #staminaWrap {
+    position: absolute; bottom: 28px; left: 26px;
+    width: 220px; height: 10px;
+    border: 1px solid rgba(255,255,255,0.25);
+    background: rgba(0,0,0,0.4);
+  }
+  #staminaBar {
+    height: 100%; width: 100%;
+    background: linear-gradient(90deg,#3a6, #6d9);
+    transition: width 0.08s linear;
+  }
+  #staminaWrap .cap { position:absolute; top:-18px; left:0; font-size:11px; opacity:0.55; letter-spacing:1px;}
+
+  /* Battement cardiaque */
+  #heart {
+    position: absolute; bottom: 24px; right: 28px;
+    font-size: 40px; color: #b33;
+    text-shadow: 0 0 12px #500;
+    transform-origin: center;
+  }
+  #heart .bpm { font-size: 12px; color:#caa; display:block; text-align:center; letter-spacing:1px;}
+
+  /* Réticule central */
+  #reticle {
+    position: absolute; top: 50%; left: 50%; width: 6px; height: 6px;
+    margin: -3px 0 0 -3px; border-radius: 50%;
+    background: rgba(255,255,255,0.55);
+    box-shadow: 0 0 6px rgba(0,0,0,0.8);
+  }
+  /* Invite "[E]/clic pour ramasser" quand on vise une page */
+  #pickPrompt {
+    position: absolute; top: 56%; left: 50%; transform: translateX(-50%);
+    font-size: 15px; letter-spacing: 2px; opacity: 0; transition: opacity .12s;
+    text-shadow: 0 0 8px #000;
+  }
+  #whisper {
+    position: absolute; top: 44%; left: 50%; transform: translateX(-50%);
+    font-size: 18px; letter-spacing: 4px; color:#a33; opacity:0;
+    text-shadow: 0 0 14px #400; pointer-events:none;
+  }
+
+  /* ---------- Écrans (titre / fin) ---------- */
+  .screen {
+    position: fixed; inset: 0; z-index: 20;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; background: radial-gradient(circle at 50% 40%, #0a0a0c 0%, #000 80%);
+    gap: 26px; padding: 20px;
+  }
+  .screen h1 {
+    font-size: clamp(34px, 7vw, 74px); letter-spacing: 8px; color:#d8d8d8;
+    text-shadow: 0 0 20px #000, 0 0 40px rgba(120,0,0,0.4);
+  }
+  .screen h1.dead { color:#b12; text-shadow: 0 0 26px #500; }
+  .screen h1.win  { color:#9c9; text-shadow: 0 0 26px #030; }
+  .screen p { max-width: 640px; line-height: 1.7; opacity: 0.8; font-size: 15px; }
+  .screen .hint { opacity: 0.5; font-size: 13px; }
+  .btn {
+    pointer-events: auto; cursor: pointer;
+    background: transparent; color: #ddd;
+    border: 1px solid rgba(255,255,255,0.4);
+    padding: 16px 42px; font-family: inherit; font-size: 20px; letter-spacing: 4px;
+    transition: all .18s;
+  }
+  .btn:hover { background: rgba(200,30,30,0.15); border-color:#b33; color:#fff; letter-spacing: 6px; }
+  #titleScreen h1 { animation: flicker 4s infinite; }
+  @keyframes flicker {
+    0%,19%,21%,55%,57%,100% { opacity:1; }
+    20%,56% { opacity:0.4; }
+  }
+  .keys { display:flex; gap:14px; flex-wrap:wrap; justify-content:center; opacity:0.7; font-size:13px;}
+  .keys span { border:1px solid rgba(255,255,255,0.2); padding:6px 10px; }
+  #loading { position:fixed; inset:0; z-index:30; display:flex; align-items:center; justify-content:center; background:#000; color:#555; letter-spacing:3px;}
+</style>
+</head>
+<body>
+
+<!-- Chargement -->
+<div id="loading">CHARGEMENT…</div>
+
+<!-- Overlays visuels -->
+<canvas id="staticOverlay"></canvas>
+<div id="vignette"></div>
+
+<!-- HUD -->
+<div id="hud">
+  <div id="pageCounter"><span class="lbl">PAGES </span><span id="pageNum">0</span> / <span id="pageTot">8</span></div>
+  <div id="staminaWrap"><div class="cap">ENDURANCE</div><div id="staminaBar"></div></div>
+  <div id="heart">♥<span class="bpm" id="bpm">72 BPM</span></div>
+  <div id="reticle"></div>
+  <div id="pickPrompt">[ E ] / CLIC — RAMASSER</div>
+  <div id="whisper"></div>
+</div>
+
+<!-- Écran titre -->
+<div id="titleScreen" class="screen">
+  <h1>THE&nbsp;&nbsp;PAGES</h1>
+  <p>Vous êtes seul dans la forêt, la nuit. Huit pages sont éparpillées entre les arbres.
+     Ramassez-les toutes. Mais chaque page réveille un peu plus <b>l'Entité</b>…
+     Ne la laissez jamais vous fixer trop longtemps.</p>
+  <div class="keys">
+    <span>ZQSD / WASD — bouger</span><span>SOURIS — regarder</span>
+    <span>SHIFT — sprint</span><span>F — lampe</span><span>E / CLIC — ramasser</span>
+  </div>
+  <button class="btn" id="startBtn">COMMENCER</button>
+  <div class="hint">Son recommandé. Cliquez pour verrouiller la souris.</div>
+</div>
+
+<!-- Écran de fin -->
+<div id="endScreen" class="screen" style="display:none;">
+  <h1 id="endTitle"></h1>
+  <p id="endText"></p>
+  <button class="btn" id="replayBtn">REJOUER</button>
+</div>
+
+<!-- Three.js r128 depuis cdnjs -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* =====================================================================================
+   THE PAGES — prototype FPS horror type Slender
+   Un seul fichier, aucune dépendance hors Three.js (CDN cdnjs r128).
+
+   ▸ Les paramètres réglables sont regroupés dans l'objet CONFIG ci-dessous.
+     Tweak à volonté : nombre de pages, agressivité de l'Entité, densité du brouillard, etc.
+   ===================================================================================== */
+
+const CONFIG = {
+  // ---------- Monde ----------
+  WORLD_SIZE: 120,          // demi-taille de la zone jouable (mur invisible à ±WORLD_SIZE)
+  TREE_COUNT: 40,           // nombre d'arbres
+  TREE_MIN_DIST: 6,         // distance mini entre deux arbres
+  FOG_DENSITY: 0.045,       // densité du brouillard (FogExp2). ↑ = on voit moins loin
+  FOG_COLOR: 0x05070a,
+
+  // ---------- Joueur ----------
+  PLAYER_HEIGHT: 1.7,
+  WALK_SPEED: 4.2,
+  SPRINT_SPEED: 8.0,
+  PLAYER_RADIUS: 0.6,       // rayon de collision joueur
+  MOUSE_SENS: 0.0022,
+  STAMINA_MAX: 100,
+  STAMINA_DRAIN: 28,        // /s pendant le sprint
+  STAMINA_REGEN: 16,        // /s au repos
+  STAMINA_MIN_SPRINT: 8,    // il faut au moins ça pour repartir en sprint
+
+  // ---------- Pages ----------
+  PAGE_COUNT: 8,
+  PAGE_PICK_DIST: 3.2,      // distance max pour ramasser
+  PAGE_RAY_DOT: 0.94,       // à quel point il faut viser la page (cos de l'angle)
+
+  // ---------- Entité (le monstre) ----------
+  ENT_BASE_DIST: 42,        // distance d'apparition avec 0 page
+  ENT_MIN_DIST: 14,         // distance d'apparition mini (beaucoup de pages)
+  ENT_APPROACH: 5.0,        // vitesse de "grignotage" quand le joueur ne regarde pas (unités/s)
+  ENT_TELEPORT_BASE: 9.0,   // délai (s) entre deux repositionnements avec 0 page
+  ENT_TELEPORT_MIN: 2.6,    // délai mini (beaucoup de pages)
+  ENT_STARE_LIMIT: 2.4,     // secondes de "fixation rapprochée" avant game over
+  ENT_DANGER_DIST: 20,      // en-dessous de cette distance + visible = danger qui monte
+  ENT_KILL_DIST: 9,         // très proche : la jauge de mort monte vite
+  ENT_VIEW_DOT: 0.55,       // cos du demi-angle du champ de vision "elle me regarde"
+  ENT_FIRST_DELAY: 6.0,     // secondes de répit au tout début
+
+  // ---------- Audio ----------
+  MASTER_VOL: 0.5,
+};
+
+/* ============================ ÉTAT GLOBAL ============================ */
+let renderer, scene, camera;
+let clock;
+let running = false, gameOver = false;
+
+const keys = {};                 // état clavier
+let yaw = 0, pitch = 0;          // orientation caméra
+let velocity = new THREE.Vector3();
+let stamina = CONFIG.STAMINA_MAX;
+let bob = 0;                     // phase du head-bob
+
+let trees = [];                  // {mesh, x, z, r} pour collisions
+let pages = [];                  // objets pages restants
+let pagesCollected = 0;
+
+let entity = null;               // groupe THREE de l'Entité
+let entityActive = false;
+let entityDist = CONFIG.ENT_BASE_DIST;
+let teleportTimer = 0;
+let stareTime = 0;               // temps de fixation rapprochée cumulé
+let dangerLevel = 0;            // 0..1 : intensité de la statique / du danger
+let elapsed = 0;                // temps de jeu écoulé
+
+let flashlight, flashOn = true;
+
+/* ============================ AUDIO (Web Audio API) ============================ */
+// Tous les sons sont synthétisés — aucun fichier externe.
+const Audio = {
+  ctx: null, master: null,
+  droneGain: null, ambGain: null,
+  init() {
+    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    this.master = this.ctx.createGain();
+    this.master.gain.value = CONFIG.MASTER_VOL;
+    this.master.connect(this.ctx.destination);
+
+    // --- Nappe d'ambiance grave en boucle (deux oscillateurs désaccordés) ---
+    this.ambGain = this.ctx.createGain(); this.ambGain.gain.value = 0.16;
+    this.ambGain.connect(this.master);
+    [40, 40.4, 60.5].forEach(f => {
+      const o = this.ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f;
+      const g = this.ctx.createGain(); g.gain.value = 0.5;
+      const lp = this.ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 180;
+      o.connect(lp); lp.connect(g); g.connect(this.ambGain); o.start();
+    });
+
+    // --- Drone de menace : monte quand l'Entité approche (piloté via droneGain) ---
+    this.droneGain = this.ctx.createGain(); this.droneGain.gain.value = 0.0;
+    this.droneGain.connect(this.master);
+    const dOsc = this.ctx.createOscillator(); dOsc.type = 'sawtooth'; dOsc.frequency.value = 74;
+    const dOsc2 = this.ctx.createOscillator(); dOsc2.type = 'square'; dOsc2.frequency.value = 111;
+    const dFilt = this.ctx.createBiquadFilter(); dFilt.type = 'bandpass'; dFilt.frequency.value = 220; dFilt.Q.value = 3;
+    dOsc.connect(dFilt); dOsc2.connect(dFilt); dFilt.connect(this.droneGain);
+    dOsc.start(); dOsc2.start();
+    this.dFilt = dFilt;
+  },
+  // Réglage continu du drone en fonction du danger (0..1)
+  setDanger(x) {
+    if (!this.ctx) return;
+    const g = 0.001 + x * 0.5;
+    this.droneGain.gain.setTargetAtTime(g, this.ctx.currentTime, 0.2);
+    this.dFilt.frequency.setTargetAtTime(180 + x * 900, this.ctx.currentTime, 0.2);
+  },
+  // Pas : petit "thud" filtré
+  footstep() {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    const o = this.ctx.createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(120, t);
+    o.frequency.exponentialRampToValueAtTime(55, t + 0.12);
+    const g = this.ctx.createGain(); g.gain.setValueAtTime(0.14, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
+    o.connect(g); g.connect(this.master); o.start(t); o.stop(t + 0.16);
+  },
+  // "Sting" à chaque page ramassée
+  sting() {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    [0, 0.06].forEach((d, i) => {
+      const o = this.ctx.createOscillator(); o.type = 'triangle';
+      o.frequency.setValueAtTime(i ? 660 : 440, t + d);
+      o.frequency.exponentialRampToValueAtTime(i ? 1320 : 880, t + d + 0.25);
+      const g = this.ctx.createGain(); g.gain.setValueAtTime(0.001, t + d);
+      g.gain.linearRampToValueAtTime(0.22, t + d + 0.02); g.gain.exponentialRampToValueAtTime(0.001, t + d + 0.5);
+      o.connect(g); g.connect(this.master); o.start(t + d); o.stop(t + d + 0.55);
+    });
+  },
+  // Coup de tonnerre / "jumpscare" à la mort
+  scare() {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    const buf = this.ctx.createBuffer(1, this.ctx.sampleRate * 1.2, this.ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 1.5);
+    const src = this.ctx.createBufferSource(); src.buffer = buf;
+    const g = this.ctx.createGain(); g.gain.value = 0.9;
+    const bp = this.ctx.createBiquadFilter(); bp.type = 'lowpass'; bp.frequency.value = 900;
+    src.connect(bp); bp.connect(g); g.connect(this.master); src.start(t);
+    // sub-boom
+    const o = this.ctx.createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(90, t);
+    o.frequency.exponentialRampToValueAtTime(30, t + 1.0);
+    const og = this.ctx.createGain(); og.gain.setValueAtTime(0.6, t); og.gain.exponentialRampToValueAtTime(0.001, t + 1.1);
+    o.connect(og); og.connect(this.master); o.start(t); o.stop(t + 1.2);
+  },
+  // Jingle de victoire (rare douceur)
+  win() {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    [523, 659, 784, 1047].forEach((f, i) => {
+      const o = this.ctx.createOscillator(); o.type = 'sine'; o.frequency.value = f;
+      const g = this.ctx.createGain(); const s = t + i * 0.18;
+      g.gain.setValueAtTime(0.001, s); g.gain.linearRampToValueAtTime(0.18, s + 0.03);
+      g.gain.exponentialRampToValueAtTime(0.001, s + 0.7);
+      o.connect(g); g.connect(this.master); o.start(s); o.stop(s + 0.75);
+    });
+  }
+};
+
+/* ============================ TEXTURES PROCÉDURALES ============================ */
+// Sol : bruit granuleux sombre généré sur un canvas puis répété.
+function makeGroundTexture() {
+  const s = 256;
+  const c = document.createElement('canvas'); c.width = c.height = s;
+  const g = c.getContext('2d');
+  g.fillStyle = '#0b0f0b'; g.fillRect(0, 0, s, s);
+  const img = g.getImageData(0, 0, s, s);
+  const d = img.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const n = Math.random();
+    // taches de terre / herbe sombre
+    const v = 8 + n * 26 + (Math.random() < 0.03 ? 30 : 0);
+    d[i]   = v * 0.7;            // R
+    d[i+1] = v * (0.85 + Math.random()*0.3); // G légèrement dominant (mousse)
+    d[i+2] = v * 0.55;          // B
+    d[i+3] = 255;
+  }
+  g.putImageData(img, 0, 0);
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(60, 60);
+  return tex;
+}
+
+// Texture "page" : feuille blanchâtre avec quelques lignes gribouillées (le fameux dessin de Slender).
+function makePageTexture() {
+  const w = 128, h = 160;
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const g = c.getContext('2d');
+  g.fillStyle = '#e9e6dc'; g.fillRect(0, 0, w, h);
+  g.strokeStyle = 'rgba(0,0,0,0.55)'; g.lineWidth = 2;
+  // silhouette fine centrale
+  g.beginPath(); g.moveTo(64, 40); g.lineTo(64, 120); g.stroke();
+  g.beginPath(); g.moveTo(64, 55); g.lineTo(44, 90); g.moveTo(64, 55); g.lineTo(84, 90); g.stroke();
+  g.beginPath(); g.moveTo(64, 90); g.lineTo(48, 128); g.moveTo(64, 90); g.lineTo(80, 128); g.stroke();
+  g.beginPath(); g.arc(64, 32, 10, 0, Math.PI*2); g.stroke();
+  // texte gribouillé
+  g.strokeStyle = 'rgba(0,0,0,0.35)'; g.lineWidth = 1;
+  for (let i = 0; i < 5; i++) {
+    const y = 138 + (i%2)*0; g.beginPath();
+    g.moveTo(20, 132 + i*5); g.lineTo(108, 132 + i*5 + (Math.random()*2-1)); g.stroke();
+  }
+  const tex = new THREE.CanvasTexture(c);
+  return tex;
+}
+
+// Visage blanc de l'Entité (deux orbites noires vides).
+function makeFaceTexture() {
+  const s = 128;
+  const c = document.createElement('canvas'); c.width = c.height = s;
+  const g = c.getContext('2d');
+  g.fillStyle = '#e8e8ea'; g.fillRect(0, 0, s, s);
+  g.fillStyle = '#000';
+  g.beginPath(); g.ellipse(44, 54, 12, 18, 0, 0, Math.PI*2); g.fill();
+  g.beginPath(); g.ellipse(84, 54, 12, 18, 0, 0, Math.PI*2); g.fill();
+  // bouche/ombre discrète
+  g.fillStyle = 'rgba(0,0,0,0.12)';
+  g.beginPath(); g.ellipse(64, 96, 10, 6, 0, 0, Math.PI*2); g.fill();
+  const tex = new THREE.CanvasTexture(c);
+  return tex;
+}
+
+/* ============================ CONSTRUCTION DE LA SCÈNE ============================ */
+function initThree() {
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.shadowMap.enabled = false;   // pas d'ombres (perf) — l'ambiance vient du brouillard/torche
+  document.body.appendChild(renderer.domElement);
+
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(CONFIG.FOG_COLOR);
+  // Brouillard exponentiel épais : cœur de la vision limitée. Tweak CONFIG.FOG_DENSITY.
+  scene.fog = new THREE.FogExp2(CONFIG.FOG_COLOR, CONFIG.FOG_DENSITY);
+
+  camera = new THREE.PerspectiveCamera(72, window.innerWidth / window.innerHeight, 0.1, 400);
+  camera.position.set(0, CONFIG.PLAYER_HEIGHT, 0);
+  scene.add(camera);
+
+  // Lumière ambiante très faible : la nuit est presque totale.
+  scene.add(new THREE.AmbientLight(0x223044, 0.25));
+  // Lune : directionnelle bleutée rasante.
+  const moon = new THREE.DirectionalLight(0x4a6a99, 0.35);
+  moon.position.set(-30, 60, -20);
+  scene.add(moon);
+
+  // --- Sol ---
+  const groundMat = new THREE.MeshStandardMaterial({ map: makeGroundTexture(), roughness: 1, metalness: 0 });
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(CONFIG.WORLD_SIZE*2.4, CONFIG.WORLD_SIZE*2.4), groundMat);
+  ground.rotation.x = -Math.PI / 2;
+  scene.add(ground);
+
+  // --- Lampe torche attachée à la caméra ---
+  // SpotLight + un petit cône translucide pour rendre le faisceau visible dans le brouillard.
+  flashlight = new THREE.SpotLight(0xfff2d0, 3.2, 60, Math.PI/7, 0.35, 1.2);
+  flashlight.position.set(0, 0, 0.2);
+  flashlight.target.position.set(0, 0, -1);
+  camera.add(flashlight);
+  camera.add(flashlight.target);
+
+  buildTrees();
+  buildPages();
+  buildEntity();
+
+  window.addEventListener('resize', onResize);
+}
+
+// Arbres : tronc (cylindre) + feuillage (cône), placés aléatoirement sans se chevaucher.
+function buildTrees() {
+  const trunkMat = new THREE.MeshStandardMaterial({ color: 0x2a1f16, roughness: 1 });
+  const leafMat  = new THREE.MeshStandardMaterial({ color: 0x0c1a10, roughness: 1 });
+  let placed = 0, guard = 0;
+  while (placed < CONFIG.TREE_COUNT && guard < CONFIG.TREE_COUNT * 40) {
+    guard++;
+    const x = (Math.random() * 2 - 1) * (CONFIG.WORLD_SIZE - 10);
+    const z = (Math.random() * 2 - 1) * (CONFIG.WORLD_SIZE - 10);
+    if (Math.hypot(x, z) < 8) continue;                 // pas d'arbre sur le spawn
+    if (trees.some(t => Math.hypot(t.x - x, t.z - z) < CONFIG.TREE_MIN_DIST)) continue;
+
+    const h = 9 + Math.random() * 7;
+    const r = 0.5 + Math.random() * 0.4;
+    const g = new THREE.Group();
+    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(r*0.7, r, h, 7), trunkMat);
+    trunk.position.y = h/2; g.add(trunk);
+    // 2 étages de feuillage
+    for (let k = 0; k < 2; k++) {
+      const ch = 5 + Math.random()*3;
+      const cone = new THREE.Mesh(new THREE.ConeGeometry(2.6 - k*0.6, ch, 8), leafMat);
+      cone.position.y = h - 1 + k*2.4; g.add(cone);
+    }
+    g.position.set(x, 0, z);
+    scene.add(g);
+    trees.push({ mesh: g, x, z, r: r + 0.5 });          // r = rayon de collision
+    placed++;
+  }
+}
+
+// Pages : plans blancs légèrement émissifs, "collés" sur certains arbres à hauteur du regard.
+function buildPages() {
+  const tex = makePageTexture();
+  // On choisit des arbres au hasard pour y accrocher les pages (sinon position libre).
+  const spots = trees.slice().sort(() => Math.random() - 0.5);
+  for (let i = 0; i < CONFIG.PAGE_COUNT; i++) {
+    const mat = new THREE.MeshStandardMaterial({
+      map: tex, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0.35,
+      side: THREE.DoubleSide, roughness: 0.9
+    });
+    const page = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 1.15), mat);
+
+    let px, pz, ang;
+    if (spots[i]) {
+      // accrochée sur un arbre : on la place sur le pourtour du tronc, face vers l'extérieur
+      ang = Math.random() * Math.PI * 2;
+      px = spots[i].x + Math.cos(ang) * (spots[i].r * 0.7);
+      pz = spots[i].z + Math.sin(ang) * (spots[i].r * 0.7);
+    } else {
+      ang = Math.random() * Math.PI * 2;
+      px = (Math.random()*2-1) * (CONFIG.WORLD_SIZE-15);
+      pz = (Math.random()*2-1) * (CONFIG.WORLD_SIZE-15);
+    }
+    page.position.set(px, 1.6, pz);
+    page.lookAt(px + Math.cos(ang), 1.6, pz + Math.sin(ang));
+    page.userData.baseY = 1.6;
+    page.userData.phase = Math.random() * Math.PI * 2;
+    scene.add(page);
+    pages.push(page);
+  }
+}
+
+// Entité : silhouette grande et fine — cylindre étiré (corps) + sphère (tête) + visage blanc.
+function buildEntity() {
+  entity = new THREE.Group();
+  const bodyMat = new THREE.MeshStandardMaterial({ color: 0x050506, roughness: 1, metalness: 0, emissive: 0x000000 });
+
+  // Corps : cylindre très fin et haut (CapsuleGeometry indispo en r128 → on l'assemble).
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.42, 3.1, 10), bodyMat);
+  body.position.y = 1.9; entity.add(body);
+  // Épaules/base arrondies pour l'effet capsule
+  const shoulder = new THREE.Mesh(new THREE.SphereGeometry(0.34, 12, 10), bodyMat);
+  shoulder.position.y = 3.45; entity.add(shoulder);
+  // "Bras" longs et fins qui pendent
+  [-1, 1].forEach(s => {
+    const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.06, 2.6, 6), bodyMat);
+    arm.position.set(s * 0.34, 2.2, 0); arm.rotation.z = s * 0.12; entity.add(arm);
+  });
+  // Tête : sphère sombre + petit plan "visage" blanc devant.
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.42, 16, 14), bodyMat);
+  head.position.y = 3.9; entity.add(head);
+  const face = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.5, 0.5),
+    new THREE.MeshBasicMaterial({ map: makeFaceTexture(), transparent: true })
+  );
+  face.position.set(0, 3.92, 0.4);
+  entity.userData.face = face;
+  entity.add(face);
+
+  entity.visible = false;
+  scene.add(entity);
+}
+
+/* ============================ CONTRÔLES ============================ */
+function bindControls() {
+  document.addEventListener('keydown', e => {
+    keys[e.code] = true;
+    if (e.code === 'KeyF' && running) toggleFlash();
+    if ((e.code === 'KeyE') && running) tryPickPage();
+  });
+  document.addEventListener('keyup', e => { keys[e.code] = false; });
+
+  // Souris (Pointer Lock)
+  document.addEventListener('mousemove', e => {
+    if (document.pointerLockElement !== renderer.domElement) return;
+    yaw   -= e.movementX * CONFIG.MOUSE_SENS;
+    pitch -= e.movementY * CONFIG.MOUSE_SENS;
+    pitch = Math.max(-Math.PI/2 + 0.05, Math.min(Math.PI/2 - 0.05, pitch));
+  });
+  document.addEventListener('mousedown', () => { if (running) tryPickPage(); });
+
+  // Si on perd le pointer lock en plein jeu → pause implicite (on ne fait rien de spécial ici)
+  document.addEventListener('pointerlockchange', () => {
+    // rien : on laisse le jeu tourner, mais la souris ne tourne plus la vue.
+  });
+}
+
+function toggleFlash() {
+  flashOn = !flashOn;
+  flashlight.intensity = flashOn ? 3.2 : 0.0;
+}
+
+function movementDir() {
+  // ZQSD + WASD. Z/W avancer, S reculer, Q/A gauche, D droite.
+  let f = 0, s = 0;
+  if (keys['KeyW'] || keys['KeyZ'] || keys['ArrowUp'])    f += 1;
+  if (keys['KeyS'] || keys['ArrowDown'])                  f -= 1;
+  if (keys['KeyA'] || keys['KeyQ'] || keys['ArrowLeft'])  s -= 1;
+  if (keys['KeyD'] || keys['ArrowRight'])                 s += 1;
+  return { f, s };
+}
+
+/* ============================ PAGES : RAMASSAGE ============================ */
+function tryPickPage() {
+  if (!pages.length) return;
+  const camDir = new THREE.Vector3();
+  camera.getWorldDirection(camDir);
+  const camPos = camera.position;
+
+  for (const page of pages) {
+    const to = new THREE.Vector3().subVectors(page.position, camPos);
+    const dist = to.length();
+    if (dist > CONFIG.PAGE_PICK_DIST) continue;
+    to.normalize();
+    // Il faut viser la page (produit scalaire avec la direction caméra).
+    if (to.dot(camDir) < CONFIG.PAGE_RAY_DOT) continue;
+    collectPage(page);
+    return;
+  }
+}
+
+function collectPage(page) {
+  scene.remove(page);
+  pages.splice(pages.indexOf(page), 1);
+  pagesCollected++;
+  document.getElementById('pageNum').textContent = pagesCollected;
+  Audio.sting();
+
+  // L'Entité devient plus agressive à chaque page.
+  updateEntityAggression();
+  // Petit "chuchotement" à l'écran
+  flashWhisper();
+
+  if (pagesCollected >= CONFIG.PAGE_COUNT) endGame(true);
+}
+
+function flashWhisper() {
+  const msgs = ['NE TE RETOURNE PAS', 'IL TE VOIT', 'ENCORE…', 'PLUS PRÈS', 'COURS'];
+  const el = document.getElementById('whisper');
+  el.textContent = msgs[Math.floor(Math.random()*msgs.length)];
+  el.style.opacity = '0.9';
+  setTimeout(() => { el.style.opacity = '0'; }, 900);
+}
+
+// Recalcule distance d'apparition + fréquence de téléport en fonction des pages ramassées.
+function updateEntityAggression() {
+  const t = pagesCollected / CONFIG.PAGE_COUNT;             // 0..1
+  entityDist = THREE.MathUtils.lerp(CONFIG.ENT_BASE_DIST, CONFIG.ENT_MIN_DIST, t);
+  // Active l'Entité dès la 1re page.
+  if (pagesCollected >= 1) entityActive = true;
+}
+
+/* ============================ ENTITÉ : IA ============================ */
+function entityTeleportDelay() {
+  const t = pagesCollected / CONFIG.PAGE_COUNT;
+  return THREE.MathUtils.lerp(CONFIG.ENT_TELEPORT_BASE, CONFIG.ENT_TELEPORT_MIN, t);
+}
+
+// Repositionne l'Entité autour du joueur, à distance entityDist, plutôt hors du champ de vision.
+function teleportEntity() {
+  const p = camera.position;
+  // On tire un angle, en biaisant légèrement vers l'arrière du joueur.
+  let best = null, bestScore = -Infinity;
+  for (let i = 0; i < 8; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const x = p.x + Math.cos(a) * entityDist;
+    const z = p.z + Math.sin(a) * entityDist;
+    if (Math.abs(x) > CONFIG.WORLD_SIZE-4 || Math.abs(z) > CONFIG.WORLD_SIZE-4) continue;
+    // score : préfère les positions PAS dans le champ de vision (effet "elle est déjà là")
+    const dir = new THREE.Vector3(x - p.x, 0, z - p.z).normalize();
+    const look = new THREE.Vector3(); camera.getWorldDirection(look); look.y = 0; look.normalize();
+    const score = -dir.dot(look) + Math.random()*0.3;      // + = derrière le joueur
+    if (score > bestScore) { bestScore = score; best = { x, z }; }
+  }
+  if (best) {
+    entity.position.set(best.x, 0, best.z);
+    entity.visible = true;
+  }
+}
+
+// Vrai si l'Entité est actuellement dans le champ de vision du joueur (et pas cachée trop loin).
+function entityInView() {
+  if (!entity.visible) return false;
+  const p = camera.position;
+  const to = new THREE.Vector3(entity.position.x - p.x, 0, entity.position.z - p.z);
+  const dist = to.length(); to.normalize();
+  const look = new THREE.Vector3(); camera.getWorldDirection(look); look.y = 0; look.normalize();
+  return to.dot(look) > CONFIG.ENT_VIEW_DOT;
+}
+
+function updateEntity(dt) {
+  if (!entityActive) return;
+
+  // Délai de répit initial.
+  if (elapsed < CONFIG.ENT_FIRST_DELAY) return;
+
+  // Fait toujours face au joueur (visage tourné vers nous).
+  entity.lookAt(camera.position.x, 0, camera.position.z);
+
+  const p = camera.position;
+  const dist = Math.hypot(entity.position.x - p.x, entity.position.z - p.z);
+  const looking = entityInView();
+
+  if (!entity.visible) {
+    // Première apparition
+    teleportEntity();
+    teleportTimer = entityTeleportDelay();
+    return;
+  }
+
+  if (looking) {
+    // Le joueur la regarde → elle est FIGÉE (ne bouge pas, ne se téléporte pas).
+    // Mais si elle est proche, la fixation devient dangereuse.
+    if (dist < CONFIG.ENT_DANGER_DIST) {
+      // Jauge de mort : monte d'autant plus vite qu'elle est proche.
+      const proximity = 1 - (dist - CONFIG.ENT_KILL_DIST) / (CONFIG.ENT_DANGER_DIST - CONFIG.ENT_KILL_DIST);
+      const rate = 0.4 + Math.max(0, proximity) * 1.4;
+      stareTime += dt * rate;
+    } else {
+      stareTime = Math.max(0, stareTime - dt * 0.5);
+    }
+  } else {
+    // Le joueur ne la regarde pas → elle avance ET son timer de téléport tourne.
+    stareTime = Math.max(0, stareTime - dt * 0.8);
+    // Grignotage : elle glisse vers le joueur.
+    const dir = new THREE.Vector3(p.x - entity.position.x, 0, p.z - entity.position.z).normalize();
+    const step = CONFIG.ENT_APPROACH * (0.6 + pagesCollected/CONFIG.PAGE_COUNT) * dt;
+    entity.position.x += dir.x * step;
+    entity.position.z += dir.z * step;
+
+    teleportTimer -= dt;
+    if (teleportTimer <= 0) {
+      teleportEntity();
+      teleportTimer = entityTeleportDelay();
+    }
+  }
+
+  // --- Danger / statique / drone ---
+  // dangerLevel : combine proximité (si visible) et jauge de fixation.
+  let dNow = 0;
+  if (dist < CONFIG.ENT_DANGER_DIST) {
+    dNow = 1 - Math.max(0, (dist - CONFIG.ENT_KILL_DIST)) / (CONFIG.ENT_DANGER_DIST - CONFIG.ENT_KILL_DIST);
+    dNow = Math.max(0, Math.min(1, dNow));
+  }
+  const stareFactor = stareTime / CONFIG.ENT_STARE_LIMIT;
+  dangerLevel = Math.max(dNow * 0.7, stareFactor);
+  dangerLevel = Math.min(1, dangerLevel);
+
+  // Game over si on la fixe de trop près trop longtemps.
+  if (stareTime >= CONFIG.ENT_STARE_LIMIT) endGame(false);
+}
+
+/* ============================ COLLISIONS ============================ */
+// Empêche de traverser arbres + murs du monde. Approche simple : on repousse hors des cercles.
+function resolveCollisions(nextX, nextZ) {
+  let x = nextX, z = nextZ;
+  // Arbres
+  for (const t of trees) {
+    const dx = x - t.x, dz = z - t.z;
+    const d = Math.hypot(dx, dz);
+    const minD = t.r + CONFIG.PLAYER_RADIUS;
+    if (d < minD && d > 0.0001) {
+      const push = (minD - d);
+      x += (dx / d) * push;
+      z += (dz / d) * push;
+    }
+  }
+  // Murs du monde
+  const lim = CONFIG.WORLD_SIZE - 2;
+  x = Math.max(-lim, Math.min(lim, x));
+  z = Math.max(-lim, Math.min(lim, z));
+  return { x, z };
+}
+
+/* ============================ MISE À JOUR JOUEUR ============================ */
+let footTimer = 0;
+function updatePlayer(dt) {
+  // Orientation caméra depuis yaw/pitch.
+  const euler = new THREE.Euler(pitch, yaw, 0, 'YXZ');
+  camera.quaternion.setFromEuler(euler);
+
+  const { f, s } = movementDir();
+  const moving = (f !== 0 || s !== 0);
+
+  // Sprint + endurance
+  const wantSprint = (keys['ShiftLeft'] || keys['ShiftRight']) && moving && f >= 0;
+  let sprinting = false;
+  if (wantSprint && stamina > CONFIG.STAMINA_MIN_SPRINT) {
+    sprinting = true;
+    stamina -= CONFIG.STAMINA_DRAIN * dt;
+  } else {
+    stamina += CONFIG.STAMINA_REGEN * dt;
+  }
+  stamina = Math.max(0, Math.min(CONFIG.STAMINA_MAX, stamina));
+  const speed = sprinting ? CONFIG.SPRINT_SPEED : CONFIG.WALK_SPEED;
+
+  // Direction dans le plan horizontal.
+  const forward = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw));
+  const right   = new THREE.Vector3( Math.cos(yaw), 0, -Math.sin(yaw));
+  const move = new THREE.Vector3();
+  move.addScaledVector(forward, f).addScaledVector(right, s);
+  if (move.lengthSq() > 0) move.normalize();
+
+  const nx = camera.position.x + move.x * speed * dt;
+  const nz = camera.position.z + move.z * speed * dt;
+  const resolved = resolveCollisions(nx, nz);
+  camera.position.x = resolved.x;
+  camera.position.z = resolved.z;
+
+  // Head-bob : oscillation verticale + latérale légère à la marche.
+  if (moving) {
+    bob += dt * (sprinting ? 14 : 9);
+    footTimer -= dt;
+    const stepInterval = sprinting ? 0.32 : 0.5;
+    if (footTimer <= 0) { Audio.footstep(); footTimer = stepInterval; }
+  } else {
+    bob += dt * 2;
+  }
+  const bobY = Math.sin(bob) * (moving ? 0.06 : 0.015);
+  const bobX = Math.cos(bob * 0.5) * (moving ? 0.03 : 0.008);
+  camera.position.y = CONFIG.PLAYER_HEIGHT + bobY;
+  // léger décalage latéral appliqué via translation caméra locale
+  camera.position.x += Math.cos(yaw) * bobX * 0.0; // (gardé neutre pour éviter la dérive)
+
+  // HUD endurance
+  document.getElementById('staminaBar').style.width = (stamina) + '%';
+}
+
+/* ============================ PAGES / HUD VISUEL ============================ */
+function updatePages(dt) {
+  // Léger flottement + pulsation lumineuse des pages restantes.
+  let aiming = false;
+  const camDir = new THREE.Vector3(); camera.getWorldDirection(camDir);
+  for (const page of pages) {
+    page.userData.phase += dt;
+    page.position.y = page.userData.baseY + Math.sin(page.userData.phase*1.5) * 0.05;
+    page.material.emissiveIntensity = 0.3 + Math.sin(page.userData.phase*2) * 0.12;
+
+    // Détecte si on vise une page ramassable → invite HUD.
+    const to = new THREE.Vector3().subVectors(page.position, camera.position);
+    const d = to.length();
+    if (d < CONFIG.PAGE_PICK_DIST && to.normalize().dot(camDir) > CONFIG.PAGE_RAY_DOT) aiming = true;
+  }
+  document.getElementById('pickPrompt').style.opacity = aiming ? '1' : '0';
+}
+
+/* ============================ OVERLAY STATIQUE (bruit) ============================ */
+const staticCanvas = document.getElementById('staticOverlay');
+const sctx = staticCanvas.getContext('2d');
+let staticBuf = null;
+function sizeStatic() {
+  // Résolution réduite pour la perf (le bruit reste crédible).
+  staticCanvas.width = Math.floor(window.innerWidth / 3);
+  staticCanvas.height = Math.floor(window.innerHeight / 3);
+  staticBuf = sctx.createImageData(staticCanvas.width, staticCanvas.height);
+}
+function renderStatic() {
+  if (!staticBuf) return;
+  const d = staticBuf.data;
+  const intensity = dangerLevel;                 // 0..1
+  for (let i = 0; i < d.length; i += 4) {
+    const v = Math.random() * 255;
+    d[i] = d[i+1] = d[i+2] = v;
+    d[i+3] = 255;
+  }
+  sctx.putImageData(staticBuf, 0, 0);
+  // Opacité globale pilotée par le danger (+ un plancher très faible pour l'ambiance).
+  staticCanvas.style.opacity = (0.02 + intensity * 0.55).toFixed(3);
+  // Léger jitter de l'écran quand c'est très chaud.
+  if (intensity > 0.6) {
+    const j = (intensity - 0.6) * 12;
+    renderer.domElement.style.transform =
+      `translate(${(Math.random()*2-1)*j}px, ${(Math.random()*2-1)*j}px)`;
+  } else {
+    renderer.domElement.style.transform = '';
+  }
+}
+
+/* ============================ HUD : CŒUR ============================ */
+let heartPhase = 0;
+function updateHeart(dt) {
+  // BPM de 68 (calme) à ~180 (danger max).
+  const bpm = Math.round(68 + dangerLevel * 112);
+  heartPhase += dt * (bpm / 60) * Math.PI * 2;
+  const scale = 1 + Math.max(0, Math.sin(heartPhase)) * (0.25 + dangerLevel*0.4);
+  const h = document.getElementById('heart');
+  h.style.transform = `scale(${scale.toFixed(3)})`;
+  h.style.color = `rgb(${180 + dangerLevel*60|0}, ${40 - dangerLevel*30|0}, ${40 - dangerLevel*30|0})`;
+  document.getElementById('bpm').textContent = bpm + ' BPM';
+}
+
+/* ============================ BOUCLE PRINCIPALE ============================ */
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 0.05);   // clamp anti-saut
+  if (running && !gameOver) {
+    elapsed += dt;
+    updatePlayer(dt);
+    updatePages(dt);
+    updateEntity(dt);
+    updateHeart(dt);
+    Audio.setDanger(dangerLevel);
+  } else {
+    // hors jeu : le danger retombe doucement
+    dangerLevel *= 0.95;
+  }
+  renderStatic();
+  renderer.render(scene, camera);
+}
+
+/* ============================ GESTION DES ÉCRANS ============================ */
+function startGame() {
+  // Init audio au premier geste utilisateur (politique navigateurs).
+  if (!Audio.ctx) Audio.init(); else if (Audio.ctx.state === 'suspended') Audio.ctx.resume();
+
+  document.getElementById('titleScreen').style.display = 'none';
+  document.getElementById('endScreen').style.display = 'none';
+  document.getElementById('hud').style.display = 'block';
+  running = true; gameOver = false;
+
+  renderer.domElement.requestPointerLock();
+}
+
+function endGame(victory) {
+  if (gameOver) return;
+  gameOver = true; running = false;
+  document.exitPointerLock();
+
+  if (victory) { Audio.win(); Audio.setDanger(0); }
+  else { Audio.scare(); }
+
+  // Petit délai pour laisser le "sting"/scare résonner.
+  setTimeout(() => {
+    const end = document.getElementById('endScreen');
+    const title = document.getElementById('endTitle');
+    const text = document.getElementById('endText');
+    document.getElementById('hud').style.display = 'none';
+    if (victory) {
+      title.textContent = 'ÉCHAPPÉ'; title.className = 'win';
+      text.textContent = `Vous avez rassemblé les ${CONFIG.PAGE_COUNT} pages et survécu à la nuit. L'Entité s'est dissoute dans le brouillard… pour cette fois.`;
+    } else {
+      title.textContent = 'ELLE VOUS A PRIS'; title.className = 'dead';
+      text.textContent = `Vous n'auriez jamais dû la fixer. Pages récupérées : ${pagesCollected}/${CONFIG.PAGE_COUNT}.`;
+    }
+    end.style.display = 'flex';
+  }, victory ? 300 : 700);
+}
+
+function replay() {
+  // Reset complet de l'état sans recharger la page.
+  pagesCollected = 0;
+  document.getElementById('pageNum').textContent = '0';
+  stamina = CONFIG.STAMINA_MAX;
+  stareTime = 0; dangerLevel = 0; elapsed = 0;
+  entityActive = false; entityDist = CONFIG.ENT_BASE_DIST;
+  entity.visible = false;
+  yaw = 0; pitch = 0;
+  camera.position.set(0, CONFIG.PLAYER_HEIGHT, 0);
+
+  // Réafficher les pages (on reconstruit).
+  pages.forEach(p => scene.remove(p));
+  pages = [];
+  buildPages();
+
+  startGame();
+}
+
+/* ============================ INIT ============================ */
+function onResize() {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  sizeStatic();
+}
+
+function main() {
+  clock = new THREE.Clock();
+  initThree();
+  bindControls();
+  sizeStatic();
+  document.getElementById('pageTot').textContent = CONFIG.PAGE_COUNT;
+  document.getElementById('loading').style.display = 'none';
+
+  document.getElementById('startBtn').addEventListener('click', startGame);
+  document.getElementById('replayBtn').addEventListener('click', replay);
+
+  animate();
+}
+
+// Lancement une fois Three.js chargé.
+if (window.THREE) main();
+else window.addEventListener('load', () => { if (window.THREE) main(); else document.getElementById('loading').textContent = 'ERREUR : Three.js non chargé'; });
+</script>
+</body>
+</html>
